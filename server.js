@@ -2,6 +2,7 @@ var fs = require('fs');
 var path = require('path');
 var express = require('express');
 var bodyParser = require('body-parser');
+var _ = require('lodash');
 var app = express();
 
 app.use('/', express.static(path.join(__dirname, 'public')));
@@ -20,7 +21,7 @@ app.get('/api/todos', function(req, res) {
   });
 });
 
-app.post('/api/todos', function(req, res) {
+app.post('/api/todos/add', function(req, res) {
   fs.readFile(TODO_FILE, function(err, data) {
     if (err) {
       console.error(err);
@@ -32,10 +33,29 @@ app.post('/api/todos', function(req, res) {
     // treat Date.now() as unique-enough for our purposes.
     var newTodo = {
       id: Date.now(),
-      author: req.body.author,
       text: req.body.text,
+      created: req.body.created,
+      modified: req.body.modified
     };
     todos.push(newTodo);
+    fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 4), function(err) {
+      if (err) {
+        console.error(err);
+        process.exit(1);
+      }
+      res.json(todos);
+    });
+  });
+});
+
+app.post('/api/todos/delete', function(req, res) {
+  fs.readFile(TODO_FILE, function(err, data) {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    var todos = JSON.parse(data);
+    _.remove(todos, t => t.id == req.body.id);
     fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 4), function(err) {
       if (err) {
         console.error(err);
