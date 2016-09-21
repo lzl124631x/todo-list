@@ -8,20 +8,29 @@ var Todo = React.createClass({
   render: function() {
     return (
       <div className="todo">
-        <h2 className="todo-author">
-          {this.props.author}
-        </h2>
         <span dangerouslySetInnerHTML={this.rawMarkup()} />
+        <span className="todo-created">{this.timestampToDateString(this.props.created)}</span>
+        <span className="todo-modified">{this.timestampToDateString(this.props.modified)}</span>
+        <button onClick={this.onDelete}>Delete</button>
       </div>
     );
+  },
+
+  timestampToDateString: function(timestamp) {
+    return new Date(+timestamp).toLocaleDateString();
+  },
+
+  onDelete: function() {
+    this.props.onTodoDelete(this.props.id);
   }
 });
 
 var TodoList = React.createClass({
   render: function() {
+    var self = this;
     var todoNodes = this.props.data.map(function(todo) {
       return (
-        <Todo author={todo.author} key={todo.id}>
+        <Todo created={todo.created} modified={todo.modified} key={todo.id} id={todo.id} onTodoDelete={self.props.onTodoDelete}>
           {todo.text}
         </Todo>
       );
@@ -36,40 +45,31 @@ var TodoList = React.createClass({
 
 var TodoForm = React.createClass({
   getInitialState: function() {
-    return {author: '', text: ''};
-  },
-  handleAuthorChange: function(e) {
-    this.setState({author: e.target.value});
+    return {text: '', created: '', modified: ''};
   },
   handleTextChange: function(e) {
     this.setState({text: e.target.value});
   },
   handleSubmit: function(e) {
     e.preventDefault();
-    var author = this.state.author.trim();
+    var now = Date.now();
     var text = this.state.text.trim();
-    if (!text || !author) {
+    if (!text) {
       return;
     }
-    this.props.onTodoSubmit({author: author, text: text});
-    this.setState({author: '', text: ''});
+    this.props.onTodoSubmit({text: text, created: now, modified: now});
+    this.setState({text: '', created: '', modified: ''});
   },
   render: function() {
     return (
       <form className="todoForm" onSubmit={this.handleSubmit}>
         <input
           type="text"
-          placeholder="Your name"
-          value={this.state.author}
-          onChange={this.handleAuthorChange}
-        />
-        <input
-          type="text"
-          placeholder="Say something..."
+          placeholder="Enter a new to-do..."
           value={this.state.text}
           onChange={this.handleTextChange}
         />
-        <input type="submit" value="Post" />
+        <input type="submit" value="Add" />
       </form>
     );
   }
@@ -77,7 +77,7 @@ var TodoForm = React.createClass({
 
 var TodoBox = React.createClass({
   loadTodosFromServer: function() {
-    $.ajax({
+    $.get({
       url: this.props.url,
       dataType: 'json',
       cache: false,
@@ -97,10 +97,9 @@ var TodoBox = React.createClass({
     todo.id = Date.now();
     var newTodos = todos.concat([todo]);
     this.setState({data: newTodos});
-    $.ajax({
-      url: this.props.url,
+    $.post({
+      url: this.props.url + '/add',
       dataType: 'json',
-      type: 'POST',
       data: todo,
       success: function(data) {
         this.setState({data: data});
@@ -108,6 +107,20 @@ var TodoBox = React.createClass({
       error: function(xhr, status, err) {
         this.setState({data: todos});
         console.error(this.props.url, status, err.toString());
+      }.bind(this)
+    });
+  },
+  handleTodoDelete: function(id) {
+    $.post({
+      url: '/api/todos/delete',
+      dataType: 'json',
+      data: { id: id },
+      success: function(data) {
+        this.setState({data: data});
+      }.bind(this),
+      error: function(xhr, status, err) {
+        this.setState({data: todos});
+        console.error('/api/todos/delete', status, err.toString());
       }.bind(this)
     });
   },
@@ -122,7 +135,7 @@ var TodoBox = React.createClass({
     return (
       <div className="todoBox">
         <h1>Todos</h1>
-        <TodoList data={this.state.data} />
+        <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} />
         <TodoForm onTodoSubmit={this.handleTodoSubmit} />
       </div>
     );
