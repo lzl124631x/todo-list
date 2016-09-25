@@ -10,6 +10,13 @@ app.use(bodyParser.json());
 
 var TODO_FILE = path.join(__dirname, 'todos.json');
 
+// Create if not exists.
+fs.stat(TODO_FILE, function(err, stat){
+  if (err && err.code == 'ENOENT') {
+    fs.writeFileSync(TODO_FILE, '[]');
+  }
+});
+
 app.get('/api/todos', function(req, res) {
   fs.readFile(TODO_FILE, function(err, data) {
     if (err) {
