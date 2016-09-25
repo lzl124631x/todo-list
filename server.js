@@ -28,15 +28,7 @@ app.post('/api/todos/add', function(req, res) {
       process.exit(1);
     }
     var todos = JSON.parse(data);
-    // NOTE: In a real implementation, we would likely rely on a database or
-    // some other approach (e.g. UUIDs) to ensure a globally unique id. We'll
-    // treat Date.now() as unique-enough for our purposes.
-    var newTodo = {
-      id: Date.now(),
-      text: req.body.text,
-      created: req.body.created,
-      modified: req.body.modified
-    };
+    var newTodo = req.body;
     todos.push(newTodo);
     fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 4), function(err) {
       if (err) {
@@ -65,6 +57,32 @@ app.post('/api/todos/delete', function(req, res) {
     });
   });
 });
+
+
+app.post('/api/todos/update', function(req, res) {
+  fs.readFile(TODO_FILE, function(err, data) {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    var todos = JSON.parse(data);
+    var todo = req.body;
+    for (var i = 0; i < todos.length; ++i) {
+      if (todos[i].id == todo.id) {
+        todos[i] = todo;
+        break;
+      }
+    }
+    fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 4), function(err) {
+      if (err) {
+        console.error(err);
+        process.exit(1);
+      }
+      res.json(todos);
+    });
+  });
+});
+
 
 app.set('port', (process.env.PORT || 4000));
 app.listen(app.get('port'), function() {

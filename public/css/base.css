@@ -1,0 +1,23 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI";
+}
+
+.header {
+  text-align: center;
+  font-variant: small-caps;
+}
+
+.todo {
+  padding: .5em;
+  border: solid 1px #dfdfdf;
+  margin-top: -1px;
+}
+
+.todo.done {
+  text-decoration: line-through;
+}
