@@ -4,7 +4,7 @@ module.exports = {
   context: path.join(__dirname, 'public/scripts'),
   entry: './todo-list.js',
   output: {
-    path: path.join(__dirname, '/public/scripts'),
+    path: path.join(__dirname, 'public/scripts'),
     filename: 'bundle.js'
   },
   resolve: {
