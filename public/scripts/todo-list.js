@@ -100,8 +100,9 @@ var TodoBox = React.createClass({
     this.setState({data: newTodos});
     $.post({
       url: this.props.url + '/add',
+      contentType: 'application/json',
+      data: JSON.stringify(todo),
       dataType: 'json',
-      data: todo,
       success: function(data) {
         this.setState({data: data});
       }.bind(this),
@@ -114,8 +115,9 @@ var TodoBox = React.createClass({
   handleTodoDelete: function(id) {
     $.post({
       url: '/api/todos/delete',
+      contentType: 'application/json',
+      data: JSON.stringify({ id: id }),
       dataType: 'json',
-      data: { id: id },
       success: function(data) {
         this.setState({data: data});
       }.bind(this),
@@ -136,8 +138,9 @@ var TodoBox = React.createClass({
     this.setState({ data: todos });
     $.post({
       url: this.props.url + '/update',
+      contentType: 'application/json',
+      data: JSON.stringify(todo),
       dataType: 'json',
-      data: todo,
       success: function(data) {
         this.setState({data: data});
       }.bind(this),
