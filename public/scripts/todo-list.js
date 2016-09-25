@@ -1,3 +1,8 @@
+var React = require('react');
+var ReactDOM = require('react-dom');
+var classNames = require('classnames');
+var $ = require('jquery');
+
 var Todo = React.createClass({
   getInitialState: function() {
     return this.props.data;
