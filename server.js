@@ -7,7 +7,6 @@ var app = express();
 
 app.use('/', express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
 
 var TODO_FILE = path.join(__dirname, 'todos.json');
 
@@ -28,8 +27,7 @@ app.post('/api/todos/add', function(req, res) {
       process.exit(1);
     }
     var todos = JSON.parse(data);
-    var newTodo = req.body;
-    todos.push(newTodo);
+    todos.push(req.body);
     fs.writeFile(TODO_FILE, JSON.stringify(todos, null, 4), function(err) {
       if (err) {
         console.error(err);
