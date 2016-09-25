@@ -32,7 +32,17 @@ var Todo = React.createClass({
 var TodoList = React.createClass({
   render: function() {
     var self = this;
-    var todoNodes = this.props.data.map(function(todo) {
+    var done = [], notDone = [];
+    var todos = this.props.data;
+    for (var i = 0; i < todos.length; ++i) {
+      if (todos[i].done) {
+        done.push(todos[i]);
+      } else {
+        notDone.push(todos[i]);
+      }
+    }
+    todos = notDone.concat(done);
+    var todoNodes = todos.map(function(todo) {
       return (
         <Todo key={todo.id} data={todo} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange}/>
       );
