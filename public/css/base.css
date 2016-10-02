@@ -21,3 +21,11 @@ body {
 .todo.done {
   text-decoration: line-through;
 }
+
+.todo.animating {
+  transition: transform .3s ease-in-out;
+}
+
+.todo-list {
+  overflow: hidden;
+}
