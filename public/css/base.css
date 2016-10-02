@@ -5,17 +5,17 @@
 
 body {
   font-family: "Segoe UI";
+  background-color: #333;
 }
 
-.header {
-  text-align: center;
-  font-variant: small-caps;
+.todo-list {
+  overflow: hidden;
 }
 
 .todo {
-  padding: .5em;
-  border: solid 1px #dfdfdf;
-  margin-top: -1px;
+  color: #fff;
+  font-weight: bold;
+  padding: 1em;
 }
 
 .todo.done {
@@ -24,8 +24,4 @@ body {
 
 .todo.animating {
   transition: transform .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.todo-list {
-  overflow: hidden;
 }

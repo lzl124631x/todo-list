@@ -13,14 +13,12 @@ var Todo = React.createClass({
   render: function() {
     var classes = classNames('todo', { 'done': this.state.todo.done }, { 'animating': this.state.animating });
     var style = {
-      transform: 'translateX(' + this.state.deltaX + 'px)'
+      transform: 'translateX(' + this.state.deltaX + 'px)',
+      backgroundColor: this.props.backgroundColor
     };
     return (
       <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={style} onTransitionEnd={this.onTransitionEnd}>
-        <input type="checkbox" onChange={this.toggleDone} checked={this.state.todo.done}/>
         <p>{this.state.todo.text}</p>
-        <p className="todo-created">{this.timestampToDateString(this.state.todo.created)}</p>
-        <button onClick={this.onDelete}>Delete</button>
       </div>
     );
   },
@@ -94,9 +92,12 @@ var TodoList = React.createClass({
       }
     }
     todos = notDone.concat(done);
+    var hue = 354.1;
     var todoNodes = todos.map(function(todo) {
+      var backgroundColor = 'hsl(' + hue + ',100%, 48%)';
+      hue += 3;
       return (
-        <Todo key={todo.id} data={todo} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange}/>
+        <Todo key={todo.id} data={todo} backgroundColor={backgroundColor} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange}/>
       );
     });
     return (
@@ -219,7 +220,6 @@ var TodoBox = React.createClass({
   render: function() {
     return (
       <div className="todoBox">
-        <h1 className="header">Todo</h1>
         <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} onTodoChange={this.handleTodoChange}/>
         <TodoForm onTodoSubmit={this.handleTodoSubmit} />
       </div>
