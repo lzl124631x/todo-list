@@ -7,7 +7,7 @@ var Todo = React.createClass({
   touchMoveWidth: 50,
 
   getInitialState: function() {
-    return { todo: this.props.data, style: undefined, point: undefined, animating: false };
+    return { todo: this.props.data, style: undefined, point: undefined, animating: false, lastDone: this.props.data.done };
   },
 
   render: function() {
@@ -17,7 +17,7 @@ var Todo = React.createClass({
     };
     return (
       <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={style} onTransitionEnd={this.onTransitionEnd}>
-        <input type="checkbox" onChange={this.handleChange} checked={this.state.todo.done}/>
+        <input type="checkbox" onChange={this.toggleDone} checked={this.state.todo.done}/>
         <p>{this.state.todo.text}</p>
         <p className="todo-created">{this.timestampToDateString(this.state.todo.created)}</p>
         <button onClick={this.onDelete}>Delete</button>
@@ -33,9 +33,13 @@ var Todo = React.createClass({
     this.props.onTodoDelete(this.state.todo.id);
   },
 
-  handleChange: function(e) {
+  toggleDone: function() {
     var todo = this.state.todo;
     todo.done = !todo.done;
+    this.updateTodo(todo);
+  },
+
+  updateTodo: function(todo) {
     this.setState({ todo: todo }, function() {
       this.props.onTodoChange(this.state.todo);
     });
@@ -59,11 +63,13 @@ var Todo = React.createClass({
       deltaX = Math.abs(to.x - from.x),
       sign = to.x > from.x ? 1 : -1;
       if (deltaX > this.touchMoveWidth) {
-        if (sign == 1 && !this.state.todo.done) {
-          // Mark done
-          this.handleChange();
+        if (sign == 1) {
+          // Check / uncheck item
+          if (this.state.lastDone == this.state.todo.done) {
+            this.toggleDone();
+          }
         } else if (sign == -1) {
-          // Delete todo
+          // Delete item
           this.onDelete();
         }
         deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
@@ -73,7 +79,7 @@ var Todo = React.createClass({
   },
 
   onTransitionEnd: function() {
-    this.setState({ animating: false });
+    this.setState({ animating: false, lastDone: this.state.todo.done });
   }
 });
 
