@@ -20,6 +20,8 @@ body {
 
 .todo.done {
   text-decoration: line-through;
+  background-color: #444 !important;
+  color: #777;
 }
 
 .todo.animating {
