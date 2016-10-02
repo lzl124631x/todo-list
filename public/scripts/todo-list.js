@@ -49,20 +49,26 @@ var Todo = React.createClass({
       this.setState({ point: undefined, deltaX: 0 });
     }
     // Only responds to one finger touch.
-    if (e.touches.length == 1) {
-      var touch = e.touches[0];
-      var to = { x: touch.clientX, y: touch.clientY };
-      if (e.type == 'touchstart') {
-        this.setState({ point: to });
-      } else {
-        var from = this.state.point,
-        deltaX = Math.abs(to.x - from.x),
-        sign = to.x > from.x ? 1 : -1;
-        if (deltaX > this.touchMoveWidth) {
-          deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
+    if (e.touches.length != 1) return;
+    var touch = e.touches[0];
+    var to = { x: touch.clientX, y: touch.clientY };
+    if (e.type == 'touchstart') {
+      this.setState({ point: to });
+    } else {
+      var from = this.state.point,
+      deltaX = Math.abs(to.x - from.x),
+      sign = to.x > from.x ? 1 : -1;
+      if (deltaX > this.touchMoveWidth) {
+        if (sign == 1 && !this.state.todo.done) {
+          // Mark done
+          this.handleChange();
+        } else if (sign == -1) {
+          // Delete todo
+          this.onDelete();
         }
-        this.setState({ deltaX: sign * deltaX });
+        deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
       }
+      this.setState({ deltaX: sign * deltaX });
     }
   },
 
