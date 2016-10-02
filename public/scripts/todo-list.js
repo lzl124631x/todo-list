@@ -63,11 +63,9 @@ var Todo = React.createClass({
       deltaX = Math.abs(to.x - from.x),
       sign = to.x > from.x ? 1 : -1;
       if (deltaX > this.touchMoveWidth) {
-        if (sign == 1) {
+        if (sign == 1 && this.state.lastDone == this.state.todo.done) {
           // Check / uncheck item
-          if (this.state.lastDone == this.state.todo.done) {
-            this.toggleDone();
-          }
+          this.toggleDone();
         } else if (sign == -1) {
           // Delete item
           this.onDelete();
