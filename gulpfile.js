@@ -7,8 +7,17 @@ var nodemon = require("nodemon");
 
 gulp.task("default", ["webpack-dev-server"]);
 
+gulp.task("server", function() {
+   nodemon({
+      script: 'server.js',
+      watch: ['server.js']
+    }).on('restart', function() {
+      gutil.log("Back-end server restarted.");
+    });
+  });
+
 // Dev build
-gulp.task("build-dev", ["webpack:build-dev"], function() {
+gulp.task("build-dev", ["webpack:build-dev", "server"], function() {
   gulp.watch(["public/**/*"], ["webpack:build-dev"]);
 });
 
@@ -61,22 +70,20 @@ gulp.task("webpack-dev-server", function(callback) {
   myConfig.debug = true;
 
   new WebpackDevServer(webpack(myConfig), {
-    contentBase: './public',
-    publicPath: './public',
-    stats: {
-      colors: true
-    }
+    contentBase: 'public/',
+    publicPath: '/assets/',
+    quiet: true
   }).listen(8080, "localhost", function(err) {
     if(err) throw new gutil.PluginError("webpack-dev-server", err);
     // Server listening
-    gutil.log("[webpack-dev-server]", "http://localhost:8080/webpack-dev-server/index.html");
+    gutil.log("[webpack-dev-server]", "http://localhost:8080/");
 
-    nodemon({
-      script: 'server.js',
-      watch: ['server.js']
-    }).on('restart', function() {
-      gutil.log("Server restarted.");
-    });
+    // nodemon({
+    //   script: 'server.js',
+    //   watch: ['server.js']
+    // }).on('restart', function() {
+    //   gutil.log("Back-end server restarted.");
+    // });
     // keep the server alive or continue?
     // callback();
   });

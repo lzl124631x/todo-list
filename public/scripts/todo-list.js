@@ -4,16 +4,19 @@ var classNames = require('classnames');
 var $ = require('jquery');
 
 var Todo = React.createClass({
+  touchMoveWidth: 50,
+
   getInitialState: function() {
-    return this.props.data;
+    return { todo: this.props.data, style: undefined, point: undefined, animating: false };
   },
+
   render: function() {
-    var classes = classNames('todo', { 'done': this.state.done });
+    var classes = classNames('todo', { 'done': this.state.todo.done }, { 'animating': this.state.animating });
     return (
-      <div className={classes}>
-        <input type="checkbox" onChange={this.handleChange} checked={this.state.done}/>
-        <p>{this.state.text}</p>
-        <p className="todo-created">{this.timestampToDateString(this.state.created)}</p>
+      <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={this.state.style} onTransitionEnd={this.onTransitionEnd}>
+        <input type="checkbox" onChange={this.handleChange} checked={this.state.todo.done}/>
+        <p>{this.state.todo.text}</p>
+        <p className="todo-created">{this.timestampToDateString(this.state.todo.created)}</p>
         <button onClick={this.onDelete}>Delete</button>
       </div>
     );
@@ -24,13 +27,42 @@ var Todo = React.createClass({
   },
 
   onDelete: function() {
-    this.props.onTodoDelete(this.state.id);
+    this.props.onTodoDelete(this.state.todo.id);
   },
 
   handleChange: function(event) {
-    this.setState({ done: !this.state.done }, function() {
-      this.props.onTodoChange(this.state);
+    var todo = this.state.todo;
+    todo.done = !todo.done;
+    this.setState({ todo: todo }, function() {
+      this.props.onTodoChange(this.state.todo);
     });
+  },
+
+  onTouch: function(e) {
+    if (e.type == 'touchend') {
+      this.setState({ point: undefined, style: { transform: 'translateX(0)' }, animating: true });
+    }
+    if (e.touches.length == 1) {
+      var touch = e.touches[0];
+      var to = { x: touch.clientX, y: touch.clientY };
+      if (e.type == 'touchstart') {
+        this.setState({ point: to });
+      } else {
+        var from = this.state.point,
+        deltaX = Math.abs(to.x - from.x),
+        sign = to.x > from.x ? 1 : -1;
+        if (deltaX > this.touchMoveWidth) {
+          deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
+        }
+        this.setState({ style: {
+          transform: 'translateX(' + sign * deltaX + 'px)'
+        }});
+      }
+    }
+  },
+
+  onTransitionEnd: function() {
+    this.setState({ animating: false });
   }
 });
 
