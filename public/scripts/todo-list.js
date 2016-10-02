@@ -12,8 +12,11 @@ var Todo = React.createClass({
 
   render: function() {
     var classes = classNames('todo', { 'done': this.state.todo.done }, { 'animating': this.state.animating });
+    var style = {
+      transform: 'translateX(' + this.state.deltaX + 'px)'
+    };
     return (
-      <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={this.state.style} onTransitionEnd={this.onTransitionEnd}>
+      <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={style} onTransitionEnd={this.onTransitionEnd}>
         <input type="checkbox" onChange={this.handleChange} checked={this.state.todo.done}/>
         <p>{this.state.todo.text}</p>
         <p className="todo-created">{this.timestampToDateString(this.state.todo.created)}</p>
@@ -30,7 +33,7 @@ var Todo = React.createClass({
     this.props.onTodoDelete(this.state.todo.id);
   },
 
-  handleChange: function(event) {
+  handleChange: function(e) {
     var todo = this.state.todo;
     todo.done = !todo.done;
     this.setState({ todo: todo }, function() {
@@ -40,8 +43,12 @@ var Todo = React.createClass({
 
   onTouch: function(e) {
     if (e.type == 'touchend') {
-      this.setState({ point: undefined, style: { transform: 'translateX(0)' }, animating: true });
+      if (this.state.deltaX != 0) { // Only animates with nonzero deltaX
+        this.setState({ animating: true });
+      }
+      this.setState({ point: undefined, deltaX: 0 });
     }
+    // Only responds to one finger touch.
     if (e.touches.length == 1) {
       var touch = e.touches[0];
       var to = { x: touch.clientX, y: touch.clientY };
@@ -54,9 +61,7 @@ var Todo = React.createClass({
         if (deltaX > this.touchMoveWidth) {
           deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
         }
-        this.setState({ style: {
-          transform: 'translateX(' + sign * deltaX + 'px)'
-        }});
+        this.setState({ deltaX: sign * deltaX });
       }
     }
   },
