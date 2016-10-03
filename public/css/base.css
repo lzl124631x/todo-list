@@ -10,12 +10,14 @@ body {
 
 .todo-list {
   overflow: hidden;
+  position: relative;
 }
 
 .todo {
   color: #fff;
   font-weight: bold;
   padding: 1em;
+  width: 100%;
 }
 
 .todo.done {

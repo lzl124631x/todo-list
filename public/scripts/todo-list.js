@@ -7,18 +7,40 @@ var Todo = React.createClass({
   touchMoveWidth: 50,
 
   getInitialState: function() {
-    return { todo: this.props.data, style: undefined, point: undefined, animating: false, lastDone: this.props.data.done };
+    return {
+      todo: this.props.data,
+      style: undefined,
+      point: undefined,
+      animating: false,
+      lastDone: this.props.data.done,
+      deltaX: 0,
+      deltaY: 0,
+      movedDelta: 0
+    };
   },
 
   render: function() {
-    var classes = classNames('todo', { 'done': this.state.todo.done }, { 'animating': this.state.animating });
+    var classes = classNames('todo', { 'done': this.state.todo.done }, { 'animating': this.state.animating }, { 'long-press': this.state.longPressed });
     var style = {
-      transform: 'translateX(' + this.state.deltaX + 'px)',
+      transform: 'translate(' + this.state.deltaX + 'px, ' + this.state.deltaY + 'px)',
       backgroundColor: this.props.backgroundColor
     };
+    var placeholder;
+    if (this.state.longPressed) {
+      style.transform += ' scale(1.1)';
+      style.boxShadow = '0 0.15em 0.5em rgba(0, 0, 0, 0.3)';
+      style.zIndex = '1';
+      style.position = 'absolute';
+      style.top = this.offset.top;
+      style.left = this.offset.left;
+      placeholder = (<div className="todo">&nbsp;</div>);
+    }
     return (
-      <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={style} onTransitionEnd={this.onTransitionEnd}>
-        <p>{this.state.todo.text}</p>
+      <div className="slot" ref={(r) => this._slot = r }>
+        <div className={classes} onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove} onTouchEnd={this.onTouchEnd} style={style} onTransitionEnd={this.onTransitionEnd}>
+          {this.state.todo.text}
+        </div>
+        {placeholder}
       </div>
     );
   },
@@ -43,23 +65,45 @@ var Todo = React.createClass({
     });
   },
 
-  onTouch: function(e) {
-    if (e.type == 'touchend') {
-      if (this.state.deltaX != 0) { // Only animates with nonzero deltaX
-        this.setState({ animating: true });
-      }
-      this.setState({ point: undefined, deltaX: 0 });
-    }
+  onTouchStart: function(e) {
+    // Only responds to one finger touch.
+    if (e.touches.length != 1) return;
+    var touch = e.touches[0];
+    this.setState({ point: { x: touch.clientX, y: touch.clientY } });
+    var longPressTimer = setTimeout(function() {
+      this.onLongPress();
+    }.bind(this), 1000);
+    this.setState({ longPressTimer: longPressTimer });
+    this.offset = $(this._slot).offset();
+  },
+
+  onTouchMove: function(e) {
+    clearTimeout(this.state.longPressTimer);
+    this.setState({ longPressTimer: undefined });
     // Only responds to one finger touch.
     if (e.touches.length != 1) return;
     var touch = e.touches[0];
     var to = { x: touch.clientX, y: touch.clientY };
-    if (e.type == 'touchstart') {
-      this.setState({ point: to });
+    var from = this.state.point,
+    deltaX = Math.abs(to.x - from.x),
+    sign = to.x > from.x ? 1 : -1,
+    deltaY = to.y - from.y;
+    if (this.state.longPressed) {
+      // long press and drag vertically to reorder item.
+      this.setState({ deltaY: deltaY });
+      var height = $(this._slot).outerHeight();
+      var threshold = this.state.movedDelta * height;
+      if (deltaY > threshold + height / 2) {
+        if (this.props.moveTodo(this.props.data.id, 1)) {
+          this.setState({ movedDelta: this.state.movedDelta + 1 });
+        }
+      } else if (deltaY < threshold - height / 2) {
+        if (this.props.moveTodo(this.props.data.id, -1)) {
+          this.setState({ movedDelta: this.state.movedDelta - 1 });
+        }
+      }
     } else {
-      var from = this.state.point,
-      deltaX = Math.abs(to.x - from.x),
-      sign = to.x > from.x ? 1 : -1;
+      // drag horizontally to toggle / delete item.
       if (deltaX > this.touchMoveWidth) {
         if (sign == 1 && this.state.lastDone == this.state.todo.done) {
           // Check / uncheck item
@@ -74,8 +118,21 @@ var Todo = React.createClass({
     }
   },
 
+  onTouchEnd: function(e) {
+    if (this.state.deltaX != 0 || this.state.deltaY != 0) { // Only animates with nonzero delta
+      this.setState({ animating: true });
+    }
+    this.setState({ point: undefined, deltaX: 0, deltaY: 0 });
+    clearTimeout(this.state.longPressTimer);
+    this.setState({ longPressTimer: undefined, longPressed: false, movedDelta: 0 });
+  },
+
   onTransitionEnd: function() {
     this.setState({ animating: false, lastDone: this.state.todo.done });
+  },
+
+  onLongPress: function() {
+    this.setState({ longPressed: true, animating: true });
   }
 });
 
@@ -97,7 +154,7 @@ var TodoList = React.createClass({
       var backgroundColor = 'hsl(' + hue + ',100%, 48%)';
       hue += 3;
       return (
-        <Todo key={todo.id} data={todo} backgroundColor={backgroundColor} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange}/>
+        <Todo key={todo.id} data={todo} backgroundColor={backgroundColor} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange} moveTodo={self.props.moveTodo}/>
       );
     });
     return (
@@ -105,7 +162,7 @@ var TodoList = React.createClass({
         {todoNodes}
       </div>
     );
-  }
+  },
 });
 
 var TodoForm = React.createClass({
@@ -215,15 +272,47 @@ var TodoBox = React.createClass({
   },
   componentDidMount: function() {
     this.loadTodosFromServer();
-    setInterval(this.loadTodosFromServer, this.props.pollInterval);
+    // setInterval(this.loadTodosFromServer, this.props.pollInterval);
   },
   render: function() {
     return (
       <div className="todoBox">
-        <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} onTodoChange={this.handleTodoChange}/>
+        <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} onTodoChange={this.handleTodoChange} moveTodo={this.moveTodo}/>
         <TodoForm onTodoSubmit={this.handleTodoSubmit} />
       </div>
     );
+  },
+
+  moveTodo: function(id, d) {
+    var todos = this.state.data;
+    for (var i = 0; i < todos.length; ++i) {
+      if (todos[i].id == id) {
+        var j = i + d;
+        if (j < 0 || j >= todos.length) {
+          return false;
+        } else {
+          var tmp = todos[i];
+          todos[i] = todos[j];
+          todos[j] = tmp;
+          this.setState({ data: todos });
+        }
+        $.post({
+          url: this.props.url + '/move',
+          contentType: 'application/json',
+          data: JSON.stringify({ id: id, d: d }),
+          dataType: 'json',
+          success: function(data) {
+            this.setState({data: data});
+          }.bind(this),
+          error: function(xhr, status, err) {
+            this.setState({data: todos});
+            console.error(this.props.url, status, err.toString());
+          }.bind(this)
+        });
+        return true;
+      }
+    }
+    return false;
   }
 });
 
