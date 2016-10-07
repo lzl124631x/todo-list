@@ -15,7 +15,8 @@ var Todo = React.createClass({
       lastDone: this.props.data.done,
       deltaX: 0,
       deltaY: 0,
-      movedDelta: 0
+      movedDelta: 0,
+      operation: null
     };
   },
 
@@ -37,7 +38,7 @@ var Todo = React.createClass({
     }
     return (
       <div className="slot" ref={(r) => this._slot = r }>
-        <div className={classes} onTouchStart={this.onTouchStart} onTouchMove={this.onTouchMove} onTouchEnd={this.onTouchEnd} style={style} onTransitionEnd={this.onTransitionEnd}>
+        <div className={classes} onTouchStart={this.onTouch} onTouchMove={this.onTouch} onTouchEnd={this.onTouch} style={style} onTransitionEnd={this.onTransitionEnd}>
           {this.state.todo.text}
         </div>
         {placeholder}
@@ -50,7 +51,18 @@ var Todo = React.createClass({
   },
 
   onDelete: function() {
-    this.props.onTodoDelete(this.state.todo.id);
+    var self = this;
+    this.setState({ operation: 'delete' });
+    $(this._slot).css({ transform: 'translateX(-100%)', transition: 'transform .5s' })
+    .one('transitionend',
+      function() {
+        $(this).slideUp(
+          200, 
+          function() {
+            self.props.onTodoDelete(self.state.todo.id);
+            self.setState({ operation: null });
+          });
+      });
   },
 
   toggleDone: function() {
@@ -65,74 +77,94 @@ var Todo = React.createClass({
     });
   },
 
+  onTouch: function(e) {
+    // block touch event during operations (toggle/delete)
+    if (this.state.operation) return;
+    switch(e.type) {
+      case 'touchstart': this.onTouchStart(e); break;
+      case 'touchmove': this.onTouchMove(e); break;
+      case 'touchend': this.onTouchEnd(e); break;
+    }
+  },
+
   onTouchStart: function(e) {
     // Only responds to one finger touch.
     if (e.touches.length != 1) return;
     var touch = e.touches[0];
     this.setState({ point: { x: touch.clientX, y: touch.clientY } });
     var longPressTimer = setTimeout(function() {
-      this.onLongPress();
-    }.bind(this), 1000);
+      this.setState({ longPressed: true });
+    }.bind(this), 800);
     this.setState({ longPressTimer: longPressTimer });
     this.offset = $(this._slot).offset();
   },
 
+  clearLongPressTimer: function() {
+    if (this.state.longPressTimer) {
+      clearTimeout(this.state.longPressTimer);
+      this.setState({ longPressTimer: undefined });
+    }
+  },
+
   onTouchMove: function(e) {
-    clearTimeout(this.state.longPressTimer);
-    this.setState({ longPressTimer: undefined });
-    // Only responds to one finger touch.
-    if (e.touches.length != 1) return;
-    var touch = e.touches[0];
-    var to = { x: touch.clientX, y: touch.clientY };
-    var from = this.state.point,
-    deltaX = Math.abs(to.x - from.x),
-    sign = to.x > from.x ? 1 : -1,
-    deltaY = to.y - from.y;
+    this.clearLongPressTimer();
     if (this.state.longPressed) {
-      // long press and drag vertically to reorder item.
-      this.setState({ deltaY: deltaY });
-      var height = $(this._slot).outerHeight();
-      var threshold = this.state.movedDelta * height;
-      if (deltaY > threshold + height / 2) {
-        if (this.props.moveTodo(this.props.data.id, 1)) {
-          this.setState({ movedDelta: this.state.movedDelta + 1 });
-        }
-      } else if (deltaY < threshold - height / 2) {
-        if (this.props.moveTodo(this.props.data.id, -1)) {
-          this.setState({ movedDelta: this.state.movedDelta - 1 });
-        }
-      }
+      this.handleLondPress(e);
     } else {
-      // drag horizontally to toggle / delete item.
-      if (deltaX > this.touchMoveWidth) {
-        if (sign == 1 && this.state.lastDone == this.state.todo.done) {
-          // Check / uncheck item
-          this.toggleDone();
-        } else if (sign == -1) {
-          // Delete item
-          this.onDelete();
-        }
-        deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
-      }
-      this.setState({ deltaX: sign * deltaX });
+      this.handleMove(e);
     }
   },
 
   onTouchEnd: function(e) {
+    this.clearLongPressTimer();
     if (this.state.deltaX != 0 || this.state.deltaY != 0) { // Only animates with nonzero delta
       this.setState({ animating: true });
     }
     this.setState({ point: undefined, deltaX: 0, deltaY: 0 });
-    clearTimeout(this.state.longPressTimer);
-    this.setState({ longPressTimer: undefined, longPressed: false, movedDelta: 0 });
+    this.setState({ longPressed: false, movedDelta: 0 });
+  },
+
+  handleLondPress: function(e) {
+    var touch = e.touches[0];
+    var to = { x: touch.clientX, y: touch.clientY };
+    var deltaY = touch.clientY - this.state.point.y;
+    // long press and drag vertically to reorder item.
+    this.setState({ deltaY: deltaY });
+    var height = $(this._slot).outerHeight();
+    var threshold = this.state.movedDelta * height;
+    if (deltaY > threshold + height / 2) {
+      if (this.props.moveTodo(this.props.data.id, 1)) {
+        this.setState({ movedDelta: this.state.movedDelta + 1 });
+      }
+    } else if (deltaY < threshold - height / 2) {
+      if (this.props.moveTodo(this.props.data.id, -1)) {
+        this.setState({ movedDelta: this.state.movedDelta - 1 });
+      }
+    }
+  },
+
+  handleMove: function(e) {
+    var touch = e.touches[0];
+    var to = touch.clientX;
+    var from = this.state.point.x,
+    deltaX = Math.abs(to - from),
+    sign = to > from ? 1 : -1;
+    // drag horizontally to toggle / delete item.
+    if (deltaX > this.touchMoveWidth) {
+      if (sign == 1 && this.state.lastDone == this.state.todo.done) {
+        // Check / uncheck item
+        this.toggleDone();
+      } else if (sign == -1) {
+        // Delete item
+        this.onDelete();
+      }
+      deltaX = (deltaX - this.touchMoveWidth) / 5 + this.touchMoveWidth;
+    }
+    this.setState({ deltaX: sign * deltaX });
   },
 
   onTransitionEnd: function() {
     this.setState({ animating: false, lastDone: this.state.todo.done });
-  },
-
-  onLongPress: function() {
-    this.setState({ longPressed: true, animating: true });
   }
 });
 
@@ -242,7 +274,6 @@ var TodoBox = React.createClass({
         this.setState({data: data});
       }.bind(this),
       error: function(xhr, status, err) {
-        this.setState({data: todos});
         console.error('/api/todos/delete', status, err.toString());
       }.bind(this)
     });
