@@ -182,17 +182,18 @@ var Todo = React.createClass({
 });
 
 var TodoList = React.createClass({
+  itemHeight: 53,
+
   getInitialState: function() {
     return {
-      style: {
-        perspective: 300
-      },
+      style: {},
       newItemStyle: {
-        // transform: 'rotateX(90deg)',
+        transform: 'perspective(300px) rotateX(90deg)',
         transformOrigin: 'bottom',
         backgroundColor: 'hsl(354.1,100%,48%)',
         // opacity: 0
       },
+      backdropStyle: { },
       newItemTextOpacity: 1,
       state: null
     }
@@ -222,9 +223,12 @@ var TodoList = React.createClass({
             // <span style={{ opacity: 1 - this.state.newItemTextOpacity }}>Release to Create Item</span>
     return (
       <div className="todo-list" style={this.state.style} ref={ (r) => this._list = r } onTransitionEnd={ this.onTransitionEnd }>
-        <div className="todo" style={ this.state.newItemStyle }>
-          <div className="new-item-text">
-          <TodoInput onTodoSubmit={this.props.onTodoSubmit}/>
+        <div className="slot">
+          <div className="backdrop" style={this.state.backdropStyle} onClick={this.cancelCreate}></div>
+          <div className="todo new-item-row" style={ this.state.newItemStyle }>
+            <div className="new-item-text">
+            <TodoInput onTodoSubmit={this.props.onTodoSubmit}/>
+            </div>
           </div>
         </div>
         {todoNodes}
@@ -233,50 +237,52 @@ var TodoList = React.createClass({
   },
 
   handleVerticalMove: function(e, t) {
-    var style = {
-      perspective: 300
-    };
+    var style = { };
     if (e.type == 'touchend') {
       if (this.state.state == 'pullToCreateItem') {
         this.setState({ state: null });
         style.transition = 'transform .3s'; // list goes back to original position
         this.setState({
           newItemStyle: {
-            transform: 'rotateX(90deg)',
+            transform: 'perspective(300px) rotateX(90deg)',
             transformOrigin: 'bottom',
             backgroundColor: 'hsl(354.1,100%,48%)',
             opacity: 0,
             transition: 'transform .3s, opacity .3s',
           }
         });
-      } else {
+      } else {// releaseToCreateItem
         this.setState({ state: null });
+        style.transform = 'translateY(' + this.itemHeight + 'px)';
         style.transition = 'transform .3s'; // list goes back to original position
         this.setState({
           newItemStyle: {
-            transform: 'rotateX(0)',
+            transform: 'perspective(300px) rotateX(0)',
             transformOrigin: 'bottom',
             backgroundColor: 'hsl(354.1,100%,48%)',
             opacity: 1
+          },
+          backdropStyle: {
+            display: 'block'
           }
         })
       }
     } else {
-      if(t.delta.y < 100) {
+      if(t.delta.y < this.itemHeight) {
         this.setState({ state: 'pullToCreateItem' });
       } else {
         this.setState({ state: 'releaseToCreateItem' });
       }
-      style.transform = 'translateY(' + t.delta.y / 3 + 'px)';
+      style.transform = 'translateY(' + t.delta.y + 'px)';
 
       var deg = 0;
-      if (t.delta.y <= 100) {
-        deg = (100 - t.delta.y) / 100 * 90;
+      if (t.delta.y <= this.itemHeight) {
+        deg = (this.itemHeight - t.delta.y) / this.itemHeight * 90;
       }
-      var newItemTextOpacity = t.delta.y > 100 ? 0 : 1;
+      var newItemTextOpacity = t.delta.y > this.itemHeight ? 0 : 1;
       this.setState({
         newItemStyle: {
-          transform: 'rotateX(' + deg + 'deg)',
+          transform: 'perspective(300px) rotateX(' + deg + 'deg)',
           transformOrigin: 'bottom',
           backgroundColor: 'hsl(354.1,100%,48%)',
           opacity: (90 - deg) / 90
@@ -288,9 +294,10 @@ var TodoList = React.createClass({
   },
 
   onTransitionEnd: function() {
-    this.setState({ style: {
-      perspective: 300
-    } });
+  },
+
+  cancelCreate: function() {
+    this.setState(this.getInitialState());
   }
 });
 
