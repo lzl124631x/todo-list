@@ -16,7 +16,8 @@ var Todo = React.createClass({
       deltaX: 0,
       deltaY: 0,
       movedDelta: 0,
-      operation: null
+      operation: null,
+      disableTouch: false
     };
   },
 
@@ -52,7 +53,7 @@ var Todo = React.createClass({
 
   onDelete: function() {
     var self = this;
-    this.setState({ operation: 'delete' });
+    this.setState({ disableTouch: true });
     $(this._slot).css({ transform: 'translateX(-100%)', transition: 'transform .5s' })
     .one('transitionend',
       function() {
@@ -60,7 +61,7 @@ var Todo = React.createClass({
           200, 
           function() {
             self.props.onTodoDelete(self.state.todo.id);
-            self.setState({ operation: null });
+            self.setState({ disableTouch: false });
           });
       });
   },
@@ -79,7 +80,7 @@ var Todo = React.createClass({
 
   onTouch: function(e) {
     // block touch event during operations (toggle/delete)
-    if (this.state.operation) return;
+    if (this.state.disableTouch) return;
     switch(e.type) {
       case 'touchstart': this.onTouchStart(e); break;
       case 'touchmove': this.onTouchMove(e); break;
@@ -108,15 +109,27 @@ var Todo = React.createClass({
 
   onTouchMove: function(e) {
     this.clearLongPressTimer();
+    // only respond to one finder touch.
+    if (e.touches.length != 1) return;
+    var t = e.touches[0], touch = {};
+    touch.point = { x: t.clientX, y: t.clientY },
+    touch.delta = { x: touch.point.x - this.state.point.x, y: touch.point.y - this.state.point.y };
     if (this.state.longPressed) {
       this.handleLondPress(e);
+    } else if (Math.abs(touch.delta.x) > Math.abs(touch.delta.y)) {
+      this.handleHorizontalMove(e);
     } else {
-      this.handleMove(e);
+      this.setState({ operation: 'VerticalDrag' });
+      this.props.handleVerticalMove(e, touch);
     }
   },
 
   onTouchEnd: function(e) {
     this.clearLongPressTimer();
+    if (this.state.operation == 'VerticalDrag') {
+      this.props.handleVerticalMove(e);
+      return;
+    }
     if (this.state.deltaX != 0 || this.state.deltaY != 0) { // Only animates with nonzero delta
       this.setState({ animating: true });
     }
@@ -143,7 +156,7 @@ var Todo = React.createClass({
     }
   },
 
-  handleMove: function(e) {
+  handleHorizontalMove: function(e) {
     var touch = e.touches[0];
     var to = touch.clientX;
     var from = this.state.point.x,
@@ -169,6 +182,22 @@ var Todo = React.createClass({
 });
 
 var TodoList = React.createClass({
+  getInitialState: function() {
+    return {
+      style: {
+        perspective: 300
+      },
+      newItemStyle: {
+        // transform: 'rotateX(90deg)',
+        transformOrigin: 'bottom',
+        backgroundColor: 'hsl(354.1,100%,48%)',
+        // opacity: 0
+      },
+      newItemTextOpacity: 1,
+      state: null
+    }
+  },
+
   render: function() {
     var self = this;
     var done = [], notDone = [];
@@ -186,46 +215,110 @@ var TodoList = React.createClass({
       var backgroundColor = 'hsl(' + hue + ',100%, 48%)';
       hue += 3;
       return (
-        <Todo key={todo.id} data={todo} backgroundColor={backgroundColor} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange} moveTodo={self.props.moveTodo}/>
+        <Todo key={todo.id} data={todo} backgroundColor={backgroundColor} onTodoDelete={self.props.onTodoDelete} onTodoChange={self.props.onTodoChange} moveTodo={self.props.moveTodo} handleVerticalMove={self.handleVerticalMove}/>
       );
     });
+            //     <span style={{ opacity: this.state.newItemTextOpacity }}>Pull to Create Item</span>
+            // <span style={{ opacity: 1 - this.state.newItemTextOpacity }}>Release to Create Item</span>
     return (
-      <div className="todo-list">
+      <div className="todo-list" style={this.state.style} ref={ (r) => this._list = r } onTransitionEnd={ this.onTransitionEnd }>
+        <div className="todo" style={ this.state.newItemStyle }>
+          <div className="new-item-text">
+          <TodoInput onTodoSubmit={this.props.onTodoSubmit}/>
+          </div>
+        </div>
         {todoNodes}
       </div>
     );
   },
+
+  handleVerticalMove: function(e, t) {
+    var style = {
+      perspective: 300
+    };
+    if (e.type == 'touchend') {
+      if (this.state.state == 'pullToCreateItem') {
+        this.setState({ state: null });
+        style.transition = 'transform .3s'; // list goes back to original position
+        this.setState({
+          newItemStyle: {
+            transform: 'rotateX(90deg)',
+            transformOrigin: 'bottom',
+            backgroundColor: 'hsl(354.1,100%,48%)',
+            opacity: 0,
+            transition: 'transform .3s, opacity .3s',
+          }
+        });
+      } else {
+        this.setState({ state: null });
+        style.transition = 'transform .3s'; // list goes back to original position
+        this.setState({
+          newItemStyle: {
+            transform: 'rotateX(0)',
+            transformOrigin: 'bottom',
+            backgroundColor: 'hsl(354.1,100%,48%)',
+            opacity: 1
+          }
+        })
+      }
+    } else {
+      if(t.delta.y < 100) {
+        this.setState({ state: 'pullToCreateItem' });
+      } else {
+        this.setState({ state: 'releaseToCreateItem' });
+      }
+      style.transform = 'translateY(' + t.delta.y / 3 + 'px)';
+
+      var deg = 0;
+      if (t.delta.y <= 100) {
+        deg = (100 - t.delta.y) / 100 * 90;
+      }
+      var newItemTextOpacity = t.delta.y > 100 ? 0 : 1;
+      this.setState({
+        newItemStyle: {
+          transform: 'rotateX(' + deg + 'deg)',
+          transformOrigin: 'bottom',
+          backgroundColor: 'hsl(354.1,100%,48%)',
+          opacity: (90 - deg) / 90
+        },
+        newItemTextOpacity: newItemTextOpacity
+      })
+    }
+    this.setState({ style: style });
+  },
+
+  onTransitionEnd: function() {
+    this.setState({ style: {
+      perspective: 300
+    } });
+  }
 });
 
-var TodoForm = React.createClass({
+var TodoInput = React.createClass({
   getInitialState: function() {
-    return {text: ''};
+    return { text: '' };
   },
-  handleTextChange: function(e) {
-    this.setState({text: e.target.value});
-  },
-  handleSubmit: function(e) {
-    e.preventDefault();
-    var now = Date.now();
-    var text = this.state.text.trim();
-    if (!text) {
-      return;
-    }
-    this.props.onTodoSubmit({id: now, text: text, created: now, modified: now, done: false });
-    this.setState({text: ''});
-  },
+
   render: function() {
     return (
-      <form className="todoForm" onSubmit={this.handleSubmit}>
-        <input
-          type="text"
-          placeholder="Enter a new to-do..."
-          value={this.state.text}
-          onChange={this.handleTextChange}
-        />
-        <input type="submit" value="Add" />
-      </form>
-    );
+      <input className="new-item-input" type="text" value={this.state.text} onChange={this.handleChange} onKeyDown={this.handleKeyDown}/>
+      );
+  },
+
+  handleChange: function(e) {
+    this.setState({ text: e.target.value });
+  },
+
+  handleKeyDown: function(e) {
+    if (e.keyCode === 13) {
+      var now = Date.now();
+      var text = this.state.text.trim();
+      if (!text) {
+        return;
+      }
+      this.props.onTodoSubmit({id: now, text: text, created: now, modified: now, done: false });
+      this.setState({text: ''});
+    }
   }
 });
 
@@ -246,14 +339,15 @@ var TodoBox = React.createClass({
       }.bind(this)
     });
   },
-  handleTodoSubmit: function(todo) {
-    var todos = this.state.data;
-    var newTodos = todos.concat([todo]);
+  handleTodoSubmit: function(todo, insertAt) {
+    var todos = this.state.data,
+    newTodos = todos.slice(0);
+    newTodos.splice(insertAt, 0, todo);
     this.setState({data: newTodos});
     $.post({
       url: this.props.url + '/add',
       contentType: 'application/json',
-      data: JSON.stringify(todo),
+      data: JSON.stringify({ insertAt: insertAt, todo: todo }),
       dataType: 'json',
       success: function(data) {
         this.setState({data: data});
@@ -308,8 +402,7 @@ var TodoBox = React.createClass({
   render: function() {
     return (
       <div className="todoBox">
-        <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} onTodoChange={this.handleTodoChange} moveTodo={this.moveTodo}/>
-        <TodoForm onTodoSubmit={this.handleTodoSubmit} />
+        <TodoList data={this.state.data} onTodoDelete={this.handleTodoDelete} onTodoChange={this.handleTodoChange} moveTodo={this.moveTodo} onTodoSubmit={this.handleTodoSubmit}/>
       </div>
     );
   },

@@ -44,7 +44,7 @@ app.post('/api/todos/add', function(req, res) {
       process.exit(1);
     }
     var todos = JSON.parse(data);
-    todos.push(req.body);
+    todos.splice(req.body.insertAt, 0, req.body.todo);
     updateTodos(todos, res);
   });
 });
