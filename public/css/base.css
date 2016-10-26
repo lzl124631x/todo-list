@@ -11,7 +11,7 @@ body {
 .todo-list {
   overflow: hidden;
   position: relative;
-  margin-top: -53px; /* for new item row */
+  /*margin-top: -53px;*/ /* for new item row */
 }
 
 .todo {
@@ -20,6 +20,10 @@ body {
   padding: 1em;
   width: 100%;
   box-sizing: border-box;
+}
+
+.todo.new-item-row {
+  background: hsl(354.1,100%,48%);
 }
 
 .todo.done {
