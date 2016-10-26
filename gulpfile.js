@@ -5,7 +5,7 @@ var webpackConfig = require("./webpack.config.js");
 var WebpackDevServer = require("webpack-dev-server");
 var nodemon = require("nodemon");
 
-gulp.task("default", ["webpack-dev-server"]);
+gulp.task("default", ["build-dev"]);
 
 gulp.task("server", function() {
    nodemon({
