@@ -20,6 +20,7 @@ body {
   padding: 1em;
   width: 100%;
   box-sizing: border-box;
+  transition: background .4s;
 }
 
 .todo.new-item-row {
@@ -58,6 +59,8 @@ body {
     font-size: inherit;
     font-weight: inherit;
     outline: none;
+    width: 100%;
+    padding: 1em;
   }
 
   .backdrop {
@@ -71,7 +74,8 @@ body {
     display: none;
   }
 
-  .new-item-row {
+  .todo.new-item-row {
     position: relative;
     z-index: 2;
+    padding: 0;
   }

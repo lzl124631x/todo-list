@@ -2,6 +2,7 @@ import React, { PropTypes } from 'react'
 import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
+import {Motion, spring} from 'react-motion';
 
 // var Todo = React.createClass({
 //   touchMoveWidth: 50,
@@ -183,61 +184,110 @@ import $ from 'jquery'
 
 const hPanThreshold = 50
 
-const initialState = { x: 0, dir: null, op: null }
+const initialState = {
+  mouse: [0, 0],
+  delta: [0, 0],
+  isPressed: false,
+  dir: null,
+  op: null
+}
 
 class Todo extends React.Component {
   constructor(props) {
     super(props)
     this.handleTouchStart = this.handleTouchStart.bind(this)
+    this.handleMouseDown = this.handleMouseDown.bind(this)
     this.handleTouchMove = this.handleTouchMove.bind(this)
+    this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleTouchEnd = this.handleTouchEnd.bind(this)
+    this.handleMouseUp = this.handleMouseUp.bind(this)
     this.state = initialState
   }
 
   render() {
     let classes = classNames('todo', { 'done': this.props.done })
+    const { delta, isPressed } = this.state
+    let style, onRest
+    if (isPressed) {
+      let x = delta[0]
+      if (Math.abs(x) > hPanThreshold) {
+        x = (x > 0 ? 1 : -1) * ((Math.abs(x) - hPanThreshold) / 5 + hPanThreshold)
+      }
+      style = { x }
+    } else {
+      style = {
+        x: spring(0)
+      }
+      onRest = () => {
+        this.setState({ op: null })
+      }
+    }
     return (
-      <div
-        className={classes}
-        style={{
-          background: `hsl(${354.1 + 3 * this.props.index},100%,48%)`,
-          transform: `translate(${this.state.x}px,0)`
-        }}
-        onTouchStart={this.handleTouchStart}
-        onTouchMove={this.handleTouchMove}
-        onTouchEnd={this.handleTouchEnd}
-      >
-        {this.props.text}
-      </div>
+      <Motion style={ style } onRest={ onRest }>
+        {({ x }) => 
+          <div
+            className={classes}
+            style={{
+              background: `hsl(${354.1 + 3 * this.props.index},100%,48%)`,
+              WebkitTransform: `translate(${x}px,0)`,
+              transform: `translate(${x}px,0)`
+            }}
+            onTouchStart={this.handleTouchStart}
+            onMouseDown={this.handleMouseDown}
+            onTouchMove={this.handleTouchMove}
+            onMouseMove={this.handleMouseMove}
+            onTouchEnd={this.handleTouchEnd}
+            onMouseUp={this.handleMouseUp}
+          >
+            {this.props.text}
+          </div>
+        }
+      </Motion>
     )
   }
 
-  handleTouchStart (e) {
-    let t = e.touches[0]
-    this.start = {
-      x: t.clientX,
-      y: t.clientY
-    }
+  handleTouchStart ({ touches }) {
+    console.log('touchstart');
+    this.handleMouseDown(touches[0])
+  }
+
+  handleMouseDown ({ pageX, pageY }) {
+    console.log('mousedown');
+    this.setState({
+      isPressed: true,
+      mouse: [pageX, pageY],
+      delta: [0, 0]
+    })
   }
 
   handleTouchMove (e) {
-    let t = e.touches[0]
-    let touch = {
-      x: t.clientX,
-      y: t.clientY
-    }
-    touch.deltaX = touch.x - this.start.x
-    touch.deltaY = touch.y - this.start.y
-    if (!this.state.dir) {
-      this.setState({ dir: Math.abs(touch.deltaX) > Math.abs(touch.deltaY) ? 'h' : 'v' })
-    }
-    if (this.state.dir == 'h') {
-      this.hPan(touch)
-    }
+    console.log('touchmove')
+    e.preventDefault()
+    this.handleMouseMove(e.touches[0])
   }
 
-  hPan(touch) {
-    let x = touch.deltaX
+  handleMouseMove ({ pageX, pageY }) {
+    console.log('mousemove');
+    let [x, y] = this.state.mouse
+    this.setState({
+      delta: [pageX - x, pageY - y]
+    })
+    if (this.state.delta[0] > this.state.delta[1]) this.hPan()
+  }
+
+  handleTouchEnd (e) {
+    console.log('touchend');
+    e.preventDefault()
+    this.handleMouseUp()
+  }
+
+  handleMouseUp () {
+    console.log('mouseup');
+    this.setState({ isPressed: false, delta: [0, 0] })
+  }
+
+  hPan() {
+    let x = this.state.delta[0]
     if (Math.abs(x) > hPanThreshold && !this.state.op) {
       if (x > 0) {
         this.setState({ op: 'toggle' })
@@ -247,14 +297,6 @@ class Todo extends React.Component {
         this.props.onDelete()
       }
     }
-    if (Math.abs(x) > hPanThreshold) {
-      x = (x > 0 ? 1 : -1) * ((Math.abs(x) - hPanThreshold) / 5 + hPanThreshold)
-    }
-    this.setState({ x: x })
-  }
-
-  handleTouchEnd (e) {
-    this.setState(initialState)
   }
 }
 
