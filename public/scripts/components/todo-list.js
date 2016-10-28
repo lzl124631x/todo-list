@@ -4,6 +4,8 @@ import classNames from 'classnames'
 import $ from 'jquery'
 import Todo from './todo'
 import AddTodo from '../containers/add-todo'
+import {Motion, spring} from 'react-motion'
+
 // import Todo from './todo'
 // import TodoInput from './todo-input'
 
@@ -127,22 +129,41 @@ import AddTodo from '../containers/add-todo'
 //   }
 // });
 
-const TodoList = ({ todos, onToggle, onDelete }) => (
-  <div className="todo-list">
-    <div className="todo new-item-row">
-      <AddTodo />
-    </div>
-    {todos.map((todo, i) =>
-      <Todo
-        key={todo.id}
-        {...todo}
-        index={i}
-        onToggle={() => onToggle(todo.id)}
-        onDelete={() => onDelete(todo.id)}
-      />
-    )}
-  </div>
-)
+class TodoList extends React.Component {
+  constructor(props) {
+    super(props)
+  }
+
+  render() {
+    const { todos, onToggle, onDelete, onReorder } = this.props
+    return (
+      <div className="todo-list">
+        <div className="todo new-item-row">
+          <AddTodo />
+        </div>
+        {
+          todos.map((todo, i) => {
+            const style = { y: spring(todo.order * 53) }
+            return (
+              <Motion defaultStyle={{ y: 0 }} style={style} key={i}>
+              {({ y }) =>
+                <Todo
+                  key={todo.id}
+                  {...todo}
+                  onToggle={() => onToggle(todo.id)}
+                  onDelete={() => onDelete(todo.id)}
+                  onReorder={(to) => onReorder(todo.id, to)}
+                  y={y}
+                />
+              }
+              </Motion>
+            )
+          }
+        )}
+      </div>
+    )
+  }
+}
 
 TodoList.propTypes = {
   todos: PropTypes.arrayOf(PropTypes.shape({

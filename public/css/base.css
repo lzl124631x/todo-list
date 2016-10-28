@@ -9,12 +9,14 @@ body {
 }
 
 .todo-list {
-  overflow: hidden;
   position: relative;
   /*margin-top: -53px;*/ /* for new item row */
 }
 
 .todo {
+  position: absolute;
+  top: 0;
+  left: 0;
   color: #fff;
   font-weight: bold;
   padding: 1em;
@@ -24,7 +26,12 @@ body {
 }
 
 .todo.new-item-row {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 0;
   background: hsl(354.1,100%,48%);
+  padding: 0;
 }
 
 .todo.done {
@@ -72,10 +79,4 @@ body {
     background: rgba(0,0,0,.3);
     z-index: 1;
     display: none;
-  }
-
-  .todo.new-item-row {
-    position: relative;
-    z-index: 2;
-    padding: 0;
   }

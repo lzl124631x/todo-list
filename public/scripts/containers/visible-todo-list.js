@@ -1,5 +1,5 @@
 import { connect } from 'react-redux'
-import { toggleTodo, deleteTodo } from '../actions'
+import { toggleTodo, deleteTodo, reorderTodo } from '../actions'
 import TodoList from '../components/todo-list'
 
 const mapStateToProps = (state) => {
@@ -13,6 +13,9 @@ const mapDispatchToProps = (dispatch) => {
     },
     onDelete: (id) => {
       dispatch(deleteTodo(id))
+    },
+    onReorder: (id, insertPos) => {
+      dispatch(reorderTodo(id, insertPos))
     }
   }
 }

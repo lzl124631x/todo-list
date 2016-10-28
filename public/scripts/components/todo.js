@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react'
 import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
-import {Motion, spring} from 'react-motion';
+import {Motion, spring} from 'react-motion'
 
 // var Todo = React.createClass({
 //   touchMoveWidth: 50,
@@ -216,7 +216,7 @@ class Todo extends React.Component {
       style = { x }
     } else {
       style = {
-        x: spring(0)
+        x: spring(0, { stiffness: 1000, damping: 40 })
       }
       onRest = () => {
         this.setState({ op: null })
@@ -228,9 +228,9 @@ class Todo extends React.Component {
           <div
             className={classes}
             style={{
-              background: `hsl(${354.1 + 3 * this.props.index},100%,48%)`,
-              WebkitTransform: `translate(${x}px,0)`,
-              transform: `translate(${x}px,0)`
+              background: `hsl(${354.1 + 3 * this.props.order},100%,48%)`,
+              WebkitTransform: `translate(${x}px,${this.props.y}px)`,
+              transform: `translate(${x}px,${this.props.y}px)`
             }}
             onTouchStart={this.handleTouchStart}
             onMouseDown={this.handleMouseDown}
@@ -238,17 +238,23 @@ class Todo extends React.Component {
             onMouseMove={this.handleMouseMove}
             onTouchEnd={this.handleTouchEnd}
             onMouseUp={this.handleMouseUp}
+            onD={this.hanldeD}
           >
-            {this.props.text}
+            {this.props.text + '-' + this.props.order}
           </div>
         }
       </Motion>
     )
   }
 
+  handleD() {
+    console.log('d')
+  }
+
   handleTouchStart ({ touches }) {
     console.log('touchstart');
     this.handleMouseDown(touches[0])
+    this.trigger('D')
   }
 
   handleMouseDown ({ pageX, pageY }) {
