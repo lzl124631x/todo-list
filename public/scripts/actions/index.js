@@ -1,4 +1,4 @@
-import { ADD_TODO, TOGGLE_TODO, DELETE_TODO } from './action-types'
+import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, REORDER_TODO } from './action-types'
 
 export const addTodo = (text) => {
   return {
@@ -18,5 +18,13 @@ export const deleteTodo = (id) => {
   return {
     type: DELETE_TODO,
     id
+  }
+}
+
+export const reorderTodo = (id, to) => {
+  return {
+    type: REORDER_TODO,
+    id,
+    to
   }
 }
