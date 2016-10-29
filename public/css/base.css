@@ -22,7 +22,7 @@ body {
   padding: 1em;
   width: 100%;
   box-sizing: border-box;
-  transition: background .4s;
+  transition: background .4s, box-shadow .4s
 }
 
 .todo.new-item-row {
