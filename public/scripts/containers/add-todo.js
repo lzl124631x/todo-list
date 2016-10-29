@@ -1,27 +1,21 @@
 import React from 'react'
 import { connect } from 'react-redux'
 import { addTodo } from '../actions'
+import _AddTodo from '../components/add-todo'
 
-let AddTodo = ({ dispatch }) => {
-  let input
+const mapStateToProps = (state) => state
 
-  return (
-    <input className="new-item-input"
-      ref={node => {
-        input = node
-      }}
-      onKeyDown={e => {
-        if (e.keyCode === 13) {
-          var text = input.value.trim();
-          if (text) {
-             dispatch(addTodo(text))
-           }
-          input.value = ''
-        }
-    }} />
-  )
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onAdd: (text, order) => {
+      dispatch(addTodo(text, order))
+    }
+  }
 }
 
-AddTodo = connect()(AddTodo)
+const AddTodo = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(_AddTodo)
 
 export default AddTodo

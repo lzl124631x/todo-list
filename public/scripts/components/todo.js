@@ -4,15 +4,11 @@ import classNames from 'classnames'
 import $ from 'jquery'
 import {Motion, spring} from 'react-motion'
 import LongPress from '../containers/long-press'
-
-function clamp(n, min, max) {
-  return Math.max(Math.min(n, max), min);
-}
+import { clamp, ITEM_HEIGHT } from '../containers/util'
 
 const H_PAN_THRESHOLD = 50
-const ITEM_HEIGHT = 53
 
-const initialState = {
+const INITIAL_STATE = {
   press: [0, 0], // the mouse-done point's offset
   mouse: [0, 0], // the mouse's offset
   delta: [0, 0], // the mouse's offset delta from mouse-move point to mouse-down point 
@@ -34,7 +30,7 @@ class Todo extends React.Component {
     this.handleTouchEnd = this.handleTouchEnd.bind(this)
     this.handleMouseUp = this.handleMouseUp.bind(this)
     this.handleLongPress = this.handleLongPress.bind(this)
-    this.state = initialState
+    this.state = INITIAL_STATE
   }
 
   getMotionConfig () {
@@ -121,7 +117,7 @@ class Todo extends React.Component {
   }
 
   handleMouseMove ({ pageX, pageY }) {
-    //console.log('mousemove');
+    console.log('mousemove');
     let [x, y] = this.state.press
     this.setState({
       mouse: [pageX, pageY],

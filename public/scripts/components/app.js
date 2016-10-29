@@ -2,8 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
-// import TodoList from './todo-list'
-import VisibleTodoList from '../containers/visible-todo-list'
+import TodoList from '../containers/todo-list'
+import AddTodo from '../containers/add-todo'
 
 // var App = React.createClass({
 //   getInitialState: function() {
@@ -124,8 +124,9 @@ import VisibleTodoList from '../containers/visible-todo-list'
 // });
 
 const App = () => (
-  <div>
-    <VisibleTodoList />
+  <div style={{height: '100%'}}>
+    <TodoList />
+    <AddTodo />
   </div>
 )
 
