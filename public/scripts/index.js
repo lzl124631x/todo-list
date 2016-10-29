@@ -11,5 +11,5 @@ render(
   <Provider store={store}>
     <App url="/api/todos"  pollInterval={2000}/>
   </Provider>,
-  document.getElementById('todo-app')
+  document.getElementById("todo-app")
 )

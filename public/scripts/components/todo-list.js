@@ -4,7 +4,8 @@ import classNames from 'classnames'
 import $ from 'jquery'
 import Todo from './todo'
 import AddTodo from '../containers/add-todo'
-import {Motion, spring} from 'react-motion'
+import { Motion, spring } from 'react-motion'
+import { ITEM_HEIGHT } from '../containers/util'
 
 // import Todo from './todo'
 // import TodoInput from './todo-input'
@@ -129,31 +130,110 @@ import {Motion, spring} from 'react-motion'
 //   }
 // });
 
+const INITIAL_STATE = {
+  press: [0, 0],
+  delta: [0, 0],
+  isPressed: false
+}
+const APP_STATE_DRAG_TO_ADD = 1
+const APP_STATE_PULL_DOWN_LIST = 2
+
 class TodoList extends React.Component {
   constructor(props) {
     super(props)
+    this.handleTouchStart = this.handleTouchStart.bind(this)
+    this.handleMouseDown = this.handleMouseDown.bind(this)
+    this.handleTouchMove = this.handleTouchMove.bind(this)
+    this.handleMouseMove = this.handleMouseMove.bind(this)
+    this.handleTouchEnd = this.handleTouchEnd.bind(this)
+    this.handleMouseUp = this.handleMouseUp.bind(this)
+    this.state = INITIAL_STATE
+  }
+  
+  handleTouchStart ({ touches }) {
+    this.handleMouseDown(touches[0])
+  }
+
+  handleMouseDown ({ pageX, pageY }) {
+    this.setState({ press: [ pageX, pageY ], isPressed: true })
+  }
+  
+  handleTouchMove (e) {
+    e.preventDefault()
+    this.handleMouseMove(e.touches[0])
+  }
+
+  handleMouseMove ({ pageX, pageY }) {
+    console.log('list move')
+    if (this.state.isPressed) {
+      const [x, y] = this.state.press
+      const delta = [ pageX - x, pageY - y ]
+      this.setState({ delta: delta})
+      if (delta[1] > 0) {
+        this.props.onPullDownList()
+      }
+    }
+  }
+  
+  handleTouchEnd (e) {
+    e.preventDefault()
+    this.handleMouseUp()
+  }
+
+  handleMouseUp () {
+    const state = Object.assign({}, INITIAL_STATE)
+    if (this.state.delta[1] > ITEM_HEIGHT) {
+        this.props.onDragToAdd()
+    }
+    this.setState(state)
   }
 
   render() {
     const { todos, onToggle, onDelete, onReorder } = this.props
+    const appState = this.context.store.getState().appState
+    let y = this.state.delta[1]
+    let style = { y: this.state.isPressed ? y : spring(0), backdropOpacity: spring(0) }
+    if (appState === APP_STATE_DRAG_TO_ADD) {
+      style.y = spring(ITEM_HEIGHT)
+      style.backdropOpacity = spring(.8)
+    } else if (appState === APP_STATE_PULL_DOWN_LIST) {
+
+    }
     return (
-      <div className="todo-list">
-        <div className="todo new-item-row">
-          <AddTodo />
-        </div>
-        {
-          todos.map((todo, i) =>
-            <Todo
-                  key={todo.id}
-                  {...todo}
-                  onToggle={() => onToggle(todo.id)}
-                  onDelete={() => onDelete(todo.id)}
-                  onReorder={(to) => onReorder(todo.id, to)}
-                  itemCount={todos.length}
-                />
-            )
+      <Motion style={style}>
+        { ({ y, backdropOpacity }) =>
+          <div style={{height: '100%' }}>
+            { appState === APP_STATE_PULL_DOWN_LIST || appState === APP_STATE_DRAG_TO_ADD ? <AddTodo y={y} /> : undefined }
+            <div className="todo-list"
+              onTouchStart={this.handleTouchStart}
+              onMouseDown={this.handleMouseDown}
+              onTouchMove={this.handleTouchMove}
+              onMouseMove={this.handleMouseMove}
+              onTouchEnd={this.handleTouchEnd}
+              onMouseUp={this.handleMouseUp}
+              style={{
+                transform: `translateY(${y}px)`,
+
+              }}>
+              {
+                todos.map((todo, i) =>
+                  <Todo
+                    key={todo.id}
+                    {...todo}
+                    onToggle={() => onToggle(todo.id)}
+                    onDelete={() => onDelete(todo.id)}
+                    onReorder={(to) => onReorder(todo.id, to)}
+                    itemCount={todos.length}
+                  />)
+              }
+              <div className="backdrop" style={{
+                display: backdropOpacity === 0 ? "none" : "block",
+                background: `rgba(0,0,0,${backdropOpacity})`
+              }}></div>
+            </div>
+          </div>
         }
-      </div>
+      </Motion>
     )
   }
 }
@@ -167,5 +247,9 @@ TodoList.propTypes = {
   onToggle: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired
 }
+
+TodoList.contextTypes = {
+  store: PropTypes.object.isRequired
+};
 
 export default TodoList

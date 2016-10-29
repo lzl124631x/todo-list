@@ -1,9 +1,17 @@
-import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, REORDER_TODO } from './action-types'
+import {
+  ADD_TODO,
+  TOGGLE_TODO,
+  DELETE_TODO,
+  REORDER_TODO,
+  DRAG_TO_ADD,
+  PULL_DOWN_LIST
+} from './action-types'
 
-export const addTodo = (text) => {
+export const addTodo = (text, order) => {
   return {
     type: ADD_TODO,
-    text
+    text,
+    order
   }
 }
 
@@ -26,5 +34,17 @@ export const reorderTodo = (id, to) => {
     type: REORDER_TODO,
     id,
     to
+  }
+}
+
+export const dragToAdd = () => {
+  return {
+    type: DRAG_TO_ADD
+  }
+}
+
+export const pullDownList = () => {
+  return {
+    type: PULL_DOWN_LIST
   }
 }
