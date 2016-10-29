@@ -53,24 +53,29 @@ const todos = (state = [], action) => {
       return newState
     }
     case REORDER_TODO: {
-      console.log('re', action)
       const { id, to } = action
       let target = state.find(t => t.id == action.id)
       let from = target.order 
-      console.log('rr', from, to)
-      if (from < to) {
-        let newState = state.map(t => Object.assign({}, t))
-        newState.forEach(t => {
+      console.log('reorder', from, to)
+      if (from == to) return state
+      let newState = state.map(t => Object.assign({}, t))
+      newState.forEach(
+        from < to ? 
+        t => {
           if (t.order > from && t.order <= to) {
             t.order--
           }
-        })
-        let newTarget = newState.find(t => t.id == action.id)
-        newTarget.order = to
-        console.log('newstate', newState)
-        return newState
-      }
-      return state
+        }
+        :
+        t => {
+          if (t.order >= to && t.order < from) {
+            t.order++
+          }
+        }
+      )
+      let newTarget = newState.find(t => t.id == action.id)
+      newTarget.order = to
+      return newState
     }
     default:
       return state
