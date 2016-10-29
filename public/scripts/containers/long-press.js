@@ -37,7 +37,7 @@ class LongPress extends React.Component {
   }
 
   handleMouseMove() {
-    console.log(2)
+    // console.log(2)
     this.cancelLongPress()
   }
 
@@ -47,13 +47,13 @@ class LongPress extends React.Component {
   }
 
   handleMouseUp() {
-    console.log(3)
+    // console.log(3)
     this.cancelLongPress()
   }
 
   cancelLongPress() {
     if (this.state.timer) {
-      console.log('longpress canceled')
+      // console.log('longpress canceled')
       clearTimeout(this.state.timer)
       this.setState({
         timer: null

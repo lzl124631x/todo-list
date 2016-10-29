@@ -183,11 +183,18 @@ import LongPress from '../containers/long-press'
 //   }
 // });
 
+function clamp(n, min, max) {
+  return Math.max(Math.min(n, max), min);
+}
+
 const H_PAN_THRESHOLD = 50
+const ITEM_HEIGHT = 53
 
 const initialState = {
-  mouse: [0, 0],
-  delta: [0, 0],
+  press: [0, 0], // the mouse-done point's offset
+  mouse: [0, 0], // the mouse's offset
+  delta: [0, 0], // the mouse's offset delta from mouse-move point to mouse-down point 
+  pressPos: 0, // on item pressed, innerPos is the position of mouse relative to the top of item
   isPressed: false,
   isLongPressed: false,
   isLongPressReleasing: false,
@@ -209,16 +216,16 @@ class Todo extends React.Component {
   }
 
   getMotionConfig () {
-    const initialY = this.props.y
-    const { delta, isPressed, isLongPressed, isLongPressReleasing } = this.state
+    const initialY = this.props.order * ITEM_HEIGHT
+    const { press, mouse, delta, pressPos, isPressed, isLongPressed, isLongPressReleasing } = this.state
     const springConfig = { stiffness: 1000, damping: 40 }
     let style = {
       x: spring(0, springConfig),
-      y: spring(initialY + 0),
+      y: spring(initialY),
       scale: spring(1)
     }, onRest, [x, y] = delta
     if (isLongPressed) {
-      style.y = spring(initialY + y, springConfig)
+      style.y = spring(mouse[1] - pressPos, springConfig)
       style.scale = spring(1.05)
     } else if (isLongPressReleasing) {
       onRest = () => {
@@ -242,7 +249,7 @@ class Todo extends React.Component {
     let classes = classNames('todo', { 'done': this.props.done })
     let { style, onRest } = this.getMotionConfig()
     return (
-        <Motion style={ style } onRest={ onRest }>
+        <Motion defaultStyle={{ x: 0, y: 0, scale: 1 }} style={ style } onRest={ onRest }>
           {({ x, y, scale }) => 
             <LongPress onLongPress={this.handleLongPress} delay={ 500 }>
               <div
@@ -254,8 +261,8 @@ class Todo extends React.Component {
                   boxShadow: isLongPressed ? '0 .2em .3em .2em rgba(0, 0, 0, 0.2)' : '',
                   zIndex: isLongPressed || isLongPressReleasing ? 1 : 0
                 }}
-                onTouchStart={this.handleTouchStart}
-                onMouseDown={this.handleMouseDown}
+                onTouchStart={this.handleTouchStart.bind(null, y)}
+                onMouseDown={this.handleMouseDown.bind(null, y)}
                 onTouchMove={this.handleTouchMove}
                 onMouseMove={this.handleMouseMove}
                 onTouchEnd={this.handleTouchEnd}
@@ -269,54 +276,60 @@ class Todo extends React.Component {
     )
   }
 
-  handleTouchStart ({ touches }) {
-    console.log('touchstart');
-    this.handleMouseDown(touches[0])
+  handleTouchStart (itemY, { touches }) {
+    //console.log('touchstart');
+    this.handleMouseDown(itemY, touches[0])
   }
 
-  handleMouseDown ({ pageX, pageY }) {
-    console.log('mousedown');
+  handleMouseDown (itemY, { pageX, pageY }) {
+    //console.log('mousedown');
     this.setState({
       isPressed: true,
+      press: [pageX, pageY],
       mouse: [pageX, pageY],
-      delta: [0, 0]
+      delta: [0, 0],
+      pressPos: pageY - itemY
     })
   }
 
   handleTouchMove (e) {
-    console.log('touchmove')
+    //console.log('touchmove')
     e.preventDefault()
     this.handleMouseMove(e.touches[0])
   }
 
   handleMouseMove ({ pageX, pageY }) {
-    console.log('mousemove');
-    let [x, y] = this.state.mouse
+    //console.log('mousemove');
+    let [x, y] = this.state.press
     this.setState({
+      mouse: [pageX, pageY],
       delta: [pageX - x, pageY - y]
     })
     if (this.state.isLongPressed) {
+      const itemY = pageY - this.state.pressPos
+      const row = clamp(Math.round(itemY / ITEM_HEIGHT), 0, this.props.itemCount - 1)
+      this.props.onReorder(row)
     } else if (this.state.delta[0] > this.state.delta[1]) {
       this.hPan()
     }
   }
 
   handleTouchEnd (e) {
-    console.log('touchend')
+    //console.log('touchend')
     e.preventDefault()
     this.handleMouseUp()
   }
 
   handleMouseUp () {
-    console.log('mouseup')
-    this.setState({ isPressed: false, delta: [0, 0] })
+    //console.log('mouseup')
+    this.setState({ isPressed: false, mouse: [0, 0], press: [0, 0], delta: [0, 0] })
     if (this.state.isLongPressed) {
       this.setState({ isLongPressed: false, isLongPressReleasing: true })
     }
   }
 
   handleLongPress () {
-    console.log('longpress')
+    //console.log('longpress')
     this.setState({ isLongPressed: true })
   }
 

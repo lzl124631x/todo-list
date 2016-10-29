@@ -142,24 +142,17 @@ class TodoList extends React.Component {
           <AddTodo />
         </div>
         {
-          todos.map((todo, i) => {
-            const style = { y: spring(todo.order * 53) }
-            return (
-              <Motion defaultStyle={{ y: 0 }} style={style} key={i}>
-              {({ y }) =>
-                <Todo
+          todos.map((todo, i) =>
+            <Todo
                   key={todo.id}
                   {...todo}
                   onToggle={() => onToggle(todo.id)}
                   onDelete={() => onDelete(todo.id)}
                   onReorder={(to) => onReorder(todo.id, to)}
-                  y={y}
+                  itemCount={todos.length}
                 />
-              }
-              </Motion>
             )
-          }
-        )}
+        }
       </div>
     )
   }
