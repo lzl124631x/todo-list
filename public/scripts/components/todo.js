@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
 import {Motion, spring} from 'react-motion'
+import LongPress from '../containers/long-press'
 
 // var Todo = React.createClass({
 //   touchMoveWidth: 50,
@@ -182,12 +183,14 @@ import {Motion, spring} from 'react-motion'
 //   }
 // });
 
-const hPanThreshold = 50
+const H_PAN_THRESHOLD = 50
 
 const initialState = {
   mouse: [0, 0],
   delta: [0, 0],
   isPressed: false,
+  isLongPressed: false,
+  isLongPressReleasing: false,
   dir: null,
   op: null
 }
@@ -201,60 +204,74 @@ class Todo extends React.Component {
     this.handleMouseMove = this.handleMouseMove.bind(this)
     this.handleTouchEnd = this.handleTouchEnd.bind(this)
     this.handleMouseUp = this.handleMouseUp.bind(this)
+    this.handleLongPress = this.handleLongPress.bind(this)
     this.state = initialState
   }
 
-  render() {
-    let classes = classNames('todo', { 'done': this.props.done })
-    const { delta, isPressed } = this.state
-    let style, onRest
-    if (isPressed) {
-      let x = delta[0]
-      if (Math.abs(x) > hPanThreshold) {
-        x = (x > 0 ? 1 : -1) * ((Math.abs(x) - hPanThreshold) / 5 + hPanThreshold)
+  getMotionConfig () {
+    const initialY = this.props.y
+    const { delta, isPressed, isLongPressed, isLongPressReleasing } = this.state
+    const springConfig = { stiffness: 1000, damping: 40 }
+    let style = {
+      x: spring(0, springConfig),
+      y: spring(initialY + 0),
+      scale: spring(1)
+    }, onRest, [x, y] = delta
+    if (isLongPressed) {
+      style.y = spring(initialY + y, springConfig)
+      style.scale = spring(1.05)
+    } else if (isLongPressReleasing) {
+      onRest = () => {
+        this.setState({ isLongPressReleasing: false })
       }
-      style = { x }
+    } else if (isPressed) {
+      if (Math.abs(x) > H_PAN_THRESHOLD) {
+        x = (x > 0 ? 1 : -1) * ((Math.abs(x) - H_PAN_THRESHOLD) / 5 + H_PAN_THRESHOLD)
+      }
+      style.x = x
     } else {
-      style = {
-        x: spring(0, { stiffness: 1000, damping: 40 })
-      }
       onRest = () => {
         this.setState({ op: null })
       }
     }
-    return (
-      <Motion style={ style } onRest={ onRest }>
-        {({ x }) => 
-          <div
-            className={classes}
-            style={{
-              background: `hsl(${354.1 + 3 * this.props.order},100%,48%)`,
-              WebkitTransform: `translate(${x}px,${this.props.y}px)`,
-              transform: `translate(${x}px,${this.props.y}px)`
-            }}
-            onTouchStart={this.handleTouchStart}
-            onMouseDown={this.handleMouseDown}
-            onTouchMove={this.handleTouchMove}
-            onMouseMove={this.handleMouseMove}
-            onTouchEnd={this.handleTouchEnd}
-            onMouseUp={this.handleMouseUp}
-            onD={this.hanldeD}
-          >
-            {this.props.text + '-' + this.props.order}
-          </div>
-        }
-      </Motion>
-    )
+    return { style, onRest }
   }
 
-  handleD() {
-    console.log('d')
+  render() {
+    let { isLongPressed, isLongPressReleasing } = this.state
+    let classes = classNames('todo', { 'done': this.props.done })
+    let { style, onRest } = this.getMotionConfig()
+    return (
+        <Motion style={ style } onRest={ onRest }>
+          {({ x, y, scale }) => 
+            <LongPress onLongPress={this.handleLongPress} delay={ 500 }>
+              <div
+                className={classes}
+                style={{
+                  background: `hsl(${354.1 + 3 * this.props.order},100%,48%)`,
+                  WebkitTransform: `translate(${x}px,${y}px) scale(${scale})`,
+                  transform: `translate(${x}px,${y}px) scale(${scale})`,
+                  boxShadow: isLongPressed ? '0 .2em .3em .2em rgba(0, 0, 0, 0.2)' : '',
+                  zIndex: isLongPressed || isLongPressReleasing ? 1 : 0
+                }}
+                onTouchStart={this.handleTouchStart}
+                onMouseDown={this.handleMouseDown}
+                onTouchMove={this.handleTouchMove}
+                onMouseMove={this.handleMouseMove}
+                onTouchEnd={this.handleTouchEnd}
+                onMouseUp={this.handleMouseUp}
+              >
+                {this.props.text + '-' + this.props.order}
+              </div>
+            </LongPress>
+          }
+        </Motion>
+    )
   }
 
   handleTouchStart ({ touches }) {
     console.log('touchstart');
     this.handleMouseDown(touches[0])
-    this.trigger('D')
   }
 
   handleMouseDown ({ pageX, pageY }) {
@@ -278,23 +295,34 @@ class Todo extends React.Component {
     this.setState({
       delta: [pageX - x, pageY - y]
     })
-    if (this.state.delta[0] > this.state.delta[1]) this.hPan()
+    if (this.state.isLongPressed) {
+    } else if (this.state.delta[0] > this.state.delta[1]) {
+      this.hPan()
+    }
   }
 
   handleTouchEnd (e) {
-    console.log('touchend');
+    console.log('touchend')
     e.preventDefault()
     this.handleMouseUp()
   }
 
   handleMouseUp () {
-    console.log('mouseup');
+    console.log('mouseup')
     this.setState({ isPressed: false, delta: [0, 0] })
+    if (this.state.isLongPressed) {
+      this.setState({ isLongPressed: false, isLongPressReleasing: true })
+    }
+  }
+
+  handleLongPress () {
+    console.log('longpress')
+    this.setState({ isLongPressed: true })
   }
 
   hPan() {
     let x = this.state.delta[0]
-    if (Math.abs(x) > hPanThreshold && !this.state.op) {
+    if (Math.abs(x) > H_PAN_THRESHOLD && !this.state.op) {
       if (x > 0) {
         this.setState({ op: 'toggle' })
         this.props.onToggle()
