@@ -2,7 +2,7 @@ import React, { PropTypes } from 'react'
 import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
-import {Motion, spring} from 'react-motion'
+import { Motion, spring } from 'react-motion'
 import LongPress from '../containers/long-press'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
 
@@ -17,7 +17,8 @@ const INITIAL_STATE = {
   isLongPressed: false,
   isLongPressReleasing: false,
   dir: null,
-  op: null
+  op: null,
+  operationDisabled: false
 }
 
 class Todo extends React.Component {
@@ -34,12 +35,12 @@ class Todo extends React.Component {
   }
 
   getMotionConfig () {
-    const initialY = this.props.order * ITEM_HEIGHT
+    const initialY = this.props.order * ITEM_HEIGHT + this.props.y
     const { press, mouse, delta, pressPos, isPressed, isLongPressed, isLongPressReleasing } = this.state
     const springConfig = { stiffness: 1000, damping: 40 }
     let style = {
       x: spring(0, springConfig),
-      y: spring(initialY),
+      y: this.props.enableMotion ? spring(initialY) : initialY,
       scale: spring(1)
     }, onRest, [x, y] = delta
     if (isLongPressed) {
@@ -77,7 +78,7 @@ class Todo extends React.Component {
                   WebkitTransform: `translate(${x}px,${y}px) scale(${scale})`,
                   transform: `translate(${x}px,${y}px) scale(${scale})`,
                   boxShadow: isLongPressed ? '0 .2em .3em .2em rgba(0, 0, 0, 0.2)' : '',
-                  zIndex: isLongPressed || isLongPressReleasing ? 1 : 0
+                  zIndex: isLongPressed || isLongPressReleasing ? 1 : this.props.zIndex
                 }}
                 onTouchStart={this.handleTouchStart.bind(null, y)}
                 onMouseDown={this.handleMouseDown.bind(null, y)}
@@ -95,11 +96,13 @@ class Todo extends React.Component {
   }
 
   handleTouchStart (itemY, { touches }) {
+    if (this.props.disableItemOperation) return;
     //console.log('touchstart');
     this.handleMouseDown(itemY, touches[0])
   }
 
   handleMouseDown (itemY, { pageX, pageY }) {
+    if (this.props.disableItemOperation) return;
     //console.log('mousedown');
     this.setState({
       isPressed: true,
@@ -111,13 +114,15 @@ class Todo extends React.Component {
   }
 
   handleTouchMove (e) {
+    if (this.props.disableItemOperation) return;
     //console.log('touchmove')
     e.preventDefault()
     this.handleMouseMove(e.touches[0])
   }
 
   handleMouseMove ({ pageX, pageY }) {
-    console.log('mousemove');
+    
+    if (this.props.disableItemOperation) return;console.log('mousemove');
     let [x, y] = this.state.press
     this.setState({
       mouse: [pageX, pageY],
@@ -129,17 +134,20 @@ class Todo extends React.Component {
       this.props.onReorder(row)
     } else if (this.state.delta[0] > this.state.delta[1]) {
       this.hPan()
+      this.props.onListOperationDisabled()
     }
   }
 
   handleTouchEnd (e) {
-    //console.log('touchend')
+    
+    if (this.props.disableItemOperation) return;//console.log('touchend')
     e.preventDefault()
     this.handleMouseUp()
   }
 
   handleMouseUp () {
-    //console.log('mouseup')
+    
+    if (this.props.disableItemOperation) return;//console.log('mouseup')
     this.setState({ isPressed: false, mouse: [0, 0], press: [0, 0], delta: [0, 0] })
     if (this.state.isLongPressed) {
       this.setState({ isLongPressed: false, isLongPressReleasing: true })
@@ -147,8 +155,9 @@ class Todo extends React.Component {
   }
 
   handleLongPress () {
-    //console.log('longpress')
-    this.setState({ isLongPressed: true })
+    
+    if (this.props.disableItemOperation) return;this.setState({ isLongPressed: true })
+    this.props.onListOperationDisabled()
   }
 
   hPan() {

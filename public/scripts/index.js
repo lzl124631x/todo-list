@@ -7,6 +7,13 @@ import { createStore } from 'redux'
 
 let store = createStore(todoApp)
 
+// Create fake data
+import { addTodo } from './actions'
+import range from 'lodash.range'
+range(10).forEach(i => {
+  store.dispatch(addTodo('' + i, i))
+})
+
 render(
   <Provider store={store}>
     <App url="/api/todos"  pollInterval={2000}/>

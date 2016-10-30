@@ -1,6 +1,4 @@
-export const ADD_TODO = 0
-export const TOGGLE_TODO = 1
-export const DELETE_TODO = 2
-export const REORDER_TODO = 3
-export const DRAG_TO_ADD = 4
-export const PULL_DOWN_LIST = 5
+export const ADD_TODO = 'ADD_TODO'
+export const TOGGLE_TODO = 'TOGGLE_TODO'
+export const DELETE_TODO = 'DELETE_TODO'
+export const REORDER_TODO = 'REORDER_TODO'
