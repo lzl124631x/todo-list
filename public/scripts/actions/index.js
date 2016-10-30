@@ -36,15 +36,3 @@ export const reorderTodo = (id, to) => {
     to
   }
 }
-
-export const dragToAdd = () => {
-  return {
-    type: DRAG_TO_ADD
-  }
-}
-
-export const pullDownList = () => {
-  return {
-    type: PULL_DOWN_LIST
-  }
-}

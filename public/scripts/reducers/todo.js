@@ -1,10 +1,12 @@
+import { combineReducers } from 'redux'
 import { ADD_TODO, TOGGLE_TODO } from '../actions/action-types'
+import { guid } from '../containers/util'
 
 const todo = (state = {}, action, todos) => {
   switch(action.type) {
     case ADD_TODO:
       return {
-        id: Date.now(),
+        id: guid(),
         text: action.text,
         done: false,
         order: action.order
@@ -17,7 +19,7 @@ const todo = (state = {}, action, todos) => {
         done: !state.done
       })
     default:
-    return state
+      return state
   }
 }
 
