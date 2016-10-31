@@ -49,15 +49,12 @@ body {
 }
 
 .new-item-input {
+  background-color: hsl(354.1,100%,48%);
   -webkit-appearance: none;
   border: none;
   outline: none;
   font-family: inherit;
   font-size: inherit;
-}
-
-.new-item-input:focus {
-  background: green !important;
 }
 
 .new-item-row-hint-text {
@@ -103,6 +100,6 @@ body {
     right: 0;
     bottom: 0;
     left: 0;
-    background: rgba(0,0,0,.8);
+    background-color rgba(0,0,0,.8);
     z-index: 1;
   }
