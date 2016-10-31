@@ -2,45 +2,35 @@ import React from 'react'
 import { Motion, spring } from 'react-motion'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
 
-let input
-
 let AddTodo = ({ onAdd, y, releaseAndAdd, cancelAdd, afterAdded }) => {
-  let deg = clamp((1 - y / ITEM_HEIGHT) * 90, 0, 90)
+  let input
   let style = {}
   style.pullOpacity = spring(y < ITEM_HEIGHT ? 1 : 0)
   style.releaseOpacity = spring(y < ITEM_HEIGHT ? 0 : 1)
   if (releaseAndAdd) {
-    console.log('releaseAndAdd')
     style.textOpacity = spring(0)
-    input.focus()
-    setTimeout(() => {input.blur()}, 3000)
   } else {
     style.textOpacity = spring(1)
   }
-  if (cancelAdd) {
-    console.log('cancelAdd')
-    input.value = ''
-    input.blur()
-    console.log('trying to blur', input.blur)
-  }
-  let lightness = clamp(y / ITEM_HEIGHT, 0, 1) * (48 - 20) + 20
 
   return (
     <div className="new-item-row"
          style={{
-          transform: `perspective(300px) translateY(${y}px) rotateX(${deg}deg)`
+          transform: `perspective(300px) translateY(${y}px) rotateX(${clamp((1 - y / ITEM_HEIGHT) * 90, 0, 90)}deg)`,
+          filter: `brightness(${clamp(y / ITEM_HEIGHT, .5, 1)})`
         }}>
       <input className="new-item-input"
-        style={{
-          background: `hsl(354.1,100%,${lightness}%)`
-        }}
         ref={ node => {
-          input = node
+          if (node != null) {
+            input = node
+            if (releaseAndAdd) node.focus()
+            if (cancelAdd) {
+              node.blur()
+              node.value = ''
+            }
+          }
         }}
-        onFocus={ ()=> { console.log('focus')}}
-        onBlur={ () => { console.log('blur')}}
         onKeyDown={e => {
-          console.log('key')
           if (e.keyCode === 13) {
             var text = input.value.trim();
             if (text) {
