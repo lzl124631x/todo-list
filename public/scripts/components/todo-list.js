@@ -67,11 +67,13 @@ class TodoList extends React.Component {
 
   handleMouseUp () {
     if (this.state.uiState === CANCEL_ADD) {
-return
+      return
     }
     let state = Object.assign({}, INITIAL_STATE)
     if (this.state.delta[1] > ITEM_HEIGHT) {
-        state.uiState = RELEASED_AND_ADD
+      state.uiState = RELEASED_AND_ADD
+    } else {
+      state.uiState = CANCEL_ADD
     }
     this.setState(state)
   }
