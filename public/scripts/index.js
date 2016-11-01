@@ -3,9 +3,16 @@ import { render } from 'react-dom'
 import { Provider } from 'react-redux'
 import App from './components/app'
 import todoApp from './reducers'
-import { createStore } from 'redux'
+import { createStore, applyMiddleware } from 'redux'
+import thunk from 'redux-thunk';
+import promise from 'redux-promise';
+import createLogger from 'redux-logger';
 
-let store = createStore(todoApp)
+const logger = createLogger();
+const store = createStore(
+  todoApp,
+  applyMiddleware(thunk, promise, logger)
+)
 
 // Create fake data
 import { addTodo } from './actions'

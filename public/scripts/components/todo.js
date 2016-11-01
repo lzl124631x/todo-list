@@ -8,19 +8,6 @@ import { clamp, ITEM_HEIGHT } from '../containers/util'
 
 const H_PAN_THRESHOLD = 50
 
-const INITIAL_STATE = {
-  press: [0, 0], // the mouse-done point's offset
-  mouse: [0, 0], // the mouse's offset
-  delta: [0, 0], // the mouse's offset delta from mouse-move point to mouse-down point 
-  pressPos: 0, // on item pressed, innerPos is the position of mouse relative to the top of item
-  isPressed: false,
-  isLongPressed: false,
-  isLongPressReleasing: false,
-  dir: null,
-  op: null,
-  operationDisabled: false
-}
-
 class Todo extends React.Component {
   constructor(props) {
     super(props)
@@ -31,42 +18,42 @@ class Todo extends React.Component {
     this.handleTouchEnd = this.handleTouchEnd.bind(this)
     this.handleMouseUp = this.handleMouseUp.bind(this)
     this.handleLongPress = this.handleLongPress.bind(this)
-    this.state = INITIAL_STATE
   }
 
   getMotionConfig () {
+    const { isPressed, x, y } = this.props
     const initialY = this.props.order * ITEM_HEIGHT + this.props.y
-    const { press, mouse, delta, pressPos, isPressed, isLongPressed, isLongPressReleasing } = this.state
     const springConfig = { stiffness: 1000, damping: 40 }
     let style = {
-      x: spring(0, springConfig),
+      x: spring(this.props.x, springConfig),
       y: this.props.enableMotion ? spring(initialY) : initialY,
       scale: spring(1)
-    }, onRest, [x, y] = delta
-    if (isLongPressed) {
-      style.y = spring(mouse[1] - pressPos, springConfig)
-      style.scale = spring(1.05)
-    } else if (isLongPressReleasing) {
-      onRest = () => {
-        this.setState({ isLongPressReleasing: false })
-      }
-    } else if (isPressed) {
+    }, onRest
+    // if (isLongPressed) {
+    //   style.y = spring(mouse[1] - pressPos, springConfig)
+    //   style.scale = spring(1.05)
+    // } else if (isLongPressReleasing) {
+    //   onRest = () => {
+    //     this.setState({ isLongPressReleasing: false })
+    //   }
+    if (isPressed) {
+      let offsetX = x
       if (Math.abs(x) > H_PAN_THRESHOLD) {
-        x = (x > 0 ? 1 : -1) * ((Math.abs(x) - H_PAN_THRESHOLD) / 5 + H_PAN_THRESHOLD)
+        offsetX = (offsetX > 0 ? 1 : -1) * ((Math.abs(offsetX) - H_PAN_THRESHOLD) / 5 + H_PAN_THRESHOLD)
       }
-      style.x = x
-    } else {
-      onRest = () => {
-        this.setState({ op: null })
-      }
-    }
+      style.x = offsetX
+    }// else {
+    //   onRest = () => {
+    //     this.setState({ op: null })
+    //   }
+    // }
     return { style, onRest }
   }
 
   render() {
-    let { isLongPressed, isLongPressReleasing } = this.state
     let classes = classNames('todo', { 'done': this.props.done })
     let { style, onRest } = this.getMotionConfig()
+    let isLongPressed = false, isLongPressReleasing = false
     return (
         <Motion defaultStyle={{ x: 0, y: 0, scale: 1 }} style={ style } onRest={ onRest }>
           {({ x, y, scale }) => 
@@ -80,12 +67,6 @@ class Todo extends React.Component {
                   boxShadow: isLongPressed ? '0 .2em .3em .2em rgba(0, 0, 0, 0.2)' : '',
                   zIndex: isLongPressed || isLongPressReleasing ? 1 : this.props.zIndex
                 }}
-                onTouchStart={this.handleTouchStart.bind(null, y)}
-                onMouseDown={this.handleMouseDown.bind(null, y)}
-                onTouchMove={this.handleTouchMove}
-                onMouseMove={this.handleMouseMove}
-                onTouchEnd={this.handleTouchEnd}
-                onMouseUp={this.handleMouseUp}
               >
                 {this.props.text + '-' + this.props.order}
               </div>
@@ -96,6 +77,7 @@ class Todo extends React.Component {
   }
 
   handleTouchStart (itemY, { touches }) {
+    console.log('touchstart', this.props.disableItemOperation, this.props.uiState);
     if (this.props.disableItemOperation) return;
     //console.log('touchstart');
     this.handleMouseDown(itemY, touches[0])
@@ -121,8 +103,8 @@ class Todo extends React.Component {
   }
 
   handleMouseMove ({ pageX, pageY }) {
-    
-    if (this.props.disableItemOperation) return;console.log('mousemove');
+    if (this.props.disableItemOperation) return;
+    console.log('mousemove');
     let [x, y] = this.state.press
     this.setState({
       mouse: [pageX, pageY],
