@@ -30,7 +30,7 @@ const todos = (state = [], action) => {
       let target = state.find(t => t.id == action.id)
       let newState = state.filter(t => t.id != action.id)
       // TODO: modified todo state. should move to todo reducer.
-      newState.each(t => {
+      newState.forEach(t => {
         if (t.order > target.order) {
           t.order--
         }
