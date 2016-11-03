@@ -105,8 +105,12 @@ class LongPress extends React.Component {
   }
 }
 
+LongPress.defaultProps = {
+  delay: 500
+}
+
 LongPress.propTypes = {
   children: React.PropTypes.element.isRequired
-};
+}
 
 export default LongPress
