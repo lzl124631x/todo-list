@@ -18,6 +18,7 @@ const PULL_RIGHT_ITEM = 'PULL_RIGHT_ITEM'
 const PULL_LEFT_ITEM = 'PULL_LEFT_ITEM'
 const ITEM_TOGGLED = 'ITEM_TOGGLED'
 const LONG_PRESS_REORDER = 'LONG_PRESS_REORDER'
+const RELEASED_TOGGLE_ITEM= 'RELEASED_TOGGLE_ITEM'
 
 const INITIAL_STATE = {
   press: [0, 0],
@@ -26,7 +27,8 @@ const INITIAL_STATE = {
   pressedItemId: null,
   pressedItemInitialState: null,
   pressPos: 0,
-  uiState: DEFAULT
+  uiState: DEFAULT,
+  togglingItemId: null
 }
 
 class TodoList extends React.Component {
@@ -82,7 +84,7 @@ class TodoList extends React.Component {
         if (uiState === PULL_RIGHT_ITEM
           && Math.abs(delta[0]) > H_PAN_THRESHOLD
           && todo.done === this.state.pressedItemInitialState) {
-          this.props.onToggle(this.state.pressedItemId)
+          // this.props.onToggle(this.state.pressedItemId)
         } else if (uiState === PULL_LEFT_ITEM
           && Math.abs(delta[0]) > H_PAN_THRESHOLD) {
           this.props.onDelete(this.state.pressedItemId)
@@ -114,12 +116,19 @@ class TodoList extends React.Component {
       return
     }
     let state = Object.assign({}, INITIAL_STATE)
-    if (uiState == PULL_DOWN_LIST) {
+    if (uiState === PULL_DOWN_LIST) {
       if (delta[1] > ITEM_HEIGHT) {
         state.uiState = RELEASED_AND_ADD
       } else if (delta[1] > 0){
         state.uiState = CANCEL_ADD
       }
+    }
+    const todo = this.getItem(this.state.pressedItemId)
+    if (uiState === PULL_RIGHT_ITEM
+      && Math.abs(delta[0]) > H_PAN_THRESHOLD
+      && todo.done === this.state.pressedItemInitialState) {
+      state.uiState = RELEASED_TOGGLE_ITEM
+      state.togglingItemId = this.state.pressedItemId
     }
     console.log('reseting ', this.state, state)
     this.setState(state)
@@ -188,6 +197,7 @@ class TodoList extends React.Component {
                     const isPressed = pressedItemId === todo.id
                     let itemIsLongPressed = isPressed && uiState === LONG_PRESS_REORDER
                     let x, itemY = y + todo.order * ITEM_HEIGHT
+                    console.log(todo, itemY)
                     if (!isPressed) {
                       x = 0
                     } else {
@@ -200,7 +210,13 @@ class TodoList extends React.Component {
                           || (uiState === PULL_LEFT_ITEM && x > 0)) {
                           x = 0
                         }
-                        console.log('pressed!', uiState, delta[0], x)
+                      }
+                    }
+                    let onRest
+                    if (uiState === RELEASED_TOGGLE_ITEM && todo.id === this.state.togglingItemId) {
+                      onRest = () => {
+                        this.props.onToggle(todo.id)
+                        console.log('toggling')
                       }
                     }
                     return <Todo
@@ -210,8 +226,9 @@ class TodoList extends React.Component {
                       y={itemY}
                       isPressed={isPressed}
                       isLongPressed={itemIsLongPressed}
-                      zIndex={ uiState == RELEASED_AND_ADD ? 0 : uiState == CANCEL_ADD ? 0 : (todo.order === 0 ? 10000: 0)}
-                      uiState={uiState}
+                      zIndex={ uiState == RELEASED_AND_ADD ? 0 : uiState == CANCEL_ADD ? 0 : pressedItemId === todo.id ? 10000 : (todo.order === 0 ? 10000: 0)}
+                      uiState={ uiState }
+                      onRest={ onRest }
                     />})
                 }
                 <div className="backdrop" style={{
