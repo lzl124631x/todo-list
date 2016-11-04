@@ -1,12 +1,30 @@
 import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, REORDER_TODO, DRAG_TO_ADD } from '../actions/action-types'
 import todo from './todo'
+import partition from 'lodash/partition'
+import flatten from 'lodash/flatten' 
 
-function reinsert(arr, from, to) {
-  const _arr = arr.slice(0)
-  const val = _arr[from]
-  _arr.splice(from, 1)
-  _arr.splice(to, 0, val)
-  return _arr
+function reorder(todos, todo, to) {
+  const _todos = todos.slice(0)
+  const from = todo.order
+  if (from === to) return _todos
+  _todos.forEach(
+        from < to ? 
+        t => {
+          if (t.order > from && t.order <= to) {
+            t.order--
+          }
+        }
+        :
+        t => {
+          if (t.order >= to && t.order < from) {
+            t.order++
+          }
+        }
+      )
+  let newTodo = _todos.find(t => t.id == todo.id)
+  newTodo.order = to
+  console.log('reseting ', newTodo)
+  return _todos
 }
 
 const todos = (state = [], action) => {
@@ -22,9 +40,19 @@ const todos = (state = [], action) => {
       return newState
     }
     case TOGGLE_TODO: {
-      return state.map(t =>
-        todo(t, action)
-      )
+      const { id } = action
+      let target = state.find(t => t.id === action.id)
+      let from = target.order
+      let firstDone, order = Number.MAX_VALUE
+      state.forEach(t => {
+        if (t.done && t.order < order) {
+          firstDone = t
+          order = t.order
+        }
+      })
+      const to = (firstDone ? firstDone.order : state.length) - 1
+      console.log('toggle', from, to)
+      return reorder(state.map(t => todo(t, action)), target, to)
     }
     case DELETE_TODO: {
       let target = state.find(t => t.id == action.id)
@@ -39,28 +67,8 @@ const todos = (state = [], action) => {
     }
     case REORDER_TODO: {
       const { id, to } = action
-      let target = state.find(t => t.id == action.id)
-      let from = target.order 
-      // console.log('reorder', from, to)
-      if (from == to) return state
-      let newState = state.map(t => Object.assign({}, t))
-      newState.forEach(
-        from < to ? 
-        t => {
-          if (t.order > from && t.order <= to) {
-            t.order--
-          }
-        }
-        :
-        t => {
-          if (t.order >= to && t.order < from) {
-            t.order++
-          }
-        }
-      )
-      let newTarget = newState.find(t => t.id == action.id)
-      newTarget.order = to
-      return newState
+      let target = state.find(t => t.id === action.id)
+      return reorder(state, target, action.to)
     }
     default:
       return state
