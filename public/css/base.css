@@ -80,6 +80,11 @@ body {
   transition: transform .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.todo.just-toggled {
+  background-color: #399131 !important;
+  text-decoration: line-through;
+}
+
 .new-item-text {
   position: relative;
 }
