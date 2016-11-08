@@ -51,6 +51,7 @@ class Todo extends React.Component {
               console.error('render', this.props.text, this.props.order, y, style.y)
             }
             return <div
+              id={ this.props.id }
               className={classes}
               style={{
                 backgroundColor: `hsl(${354.1 + 3 * this.props.order},100%,48%)`,

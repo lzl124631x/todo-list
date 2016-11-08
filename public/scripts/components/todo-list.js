@@ -7,6 +7,7 @@ import AddTodo from '../containers/add-todo'
 import LongPress from '../containers/long-press'
 import { Motion, spring } from 'react-motion'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
+import TweenMax from 'gsap'
 
 const H_PAN_THRESHOLD = 50
 
@@ -139,8 +140,12 @@ class TodoList extends React.Component {
       case PULL_RIGHT_ITEM: {
         if (Math.abs(delta[0]) > H_PAN_THRESHOLD
           && todo.done === this.state.pressedItemInitialState) {
-          state.uiState = RELEASED_TOGGLE_ITEM
-          state.todoId = this.state.todoId
+          let tl = new TimelineLite()
+          let item = $(this.list).find(`#${this.state.todoId}`)
+          tl.to(item, 1, { x: -100 })
+          .to(item, 1, { y: 300 })
+          // state.uiState = RELEASED_TOGGLE_ITEM
+          // state.todoId = this.state.todoId
         }
         break;
       }
@@ -227,8 +232,6 @@ class TodoList extends React.Component {
         this.props.onToggle(todoId)
       }
     }
-    if (uiState === RELEASED_DELETE_ITEM)
-    console.log('!!!!', '>>> ', todoId)
     if (deleting) {
       console.log('deleting')
       itemX = -300
@@ -283,7 +286,8 @@ class TodoList extends React.Component {
                 onTouchMove={this.handleTouchMove}
                 onMouseMove={this.handleMouseMove}
                 onTouchEnd={this.handleTouchEnd}
-                onMouseUp={this.handleMouseUp}>
+                onMouseUp={this.handleMouseUp}
+                ref={ (list) => { this.list = list }}>
                 {
                   this.props.todos.map((todo, i) => {
                     const {
