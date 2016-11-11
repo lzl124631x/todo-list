@@ -142,8 +142,8 @@ class TodoList extends React.Component {
           && todo.done === this.state.pressedItemInitialState) {
           let tl = new TimelineLite()
           let item = $(this.list).find(`#${this.state.todoId}`)
-          tl.to(item, 1, { x: -100 })
-          .to(item, 1, { y: 300 })
+          tl.to(item, 1, { x: 0, scaleX: 1, scaleY: 1 })
+          .to(item, 1, { y: 300, scaleX: 1, scaleY: 1 })
           // state.uiState = RELEASED_TOGGLE_ITEM
           // state.todoId = this.state.todoId
         }
