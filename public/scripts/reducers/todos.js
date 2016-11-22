@@ -1,7 +1,8 @@
 import { ADD_TODO, TOGGLE_TODO, DELETE_TODO, REORDER_TODO, DRAG_TO_ADD } from '../actions/action-types'
 import todo from './todo'
 import partition from 'lodash/partition'
-import flatten from 'lodash/flatten' 
+import flatten from 'lodash/flatten'
+import { clamp } from '../containers/util'
 
 function reorder(todos, todo, to) {
   const _todos = todos.slice(0)
@@ -23,7 +24,6 @@ function reorder(todos, todo, to) {
       )
   let newTodo = _todos.find(t => t.id == todo.id)
   newTodo.order = to
-  console.log('reseting ', newTodo)
   return _todos
 }
 
@@ -66,9 +66,10 @@ const todos = (state = [], action) => {
       return newState
     }
     case REORDER_TODO: {
-      const { id, to } = action
+      let { id, to } = action
+      to = clamp(to, 0, state.length - 1)
       let target = state.find(t => t.id === action.id)
-      return reorder(state, target, action.to)
+      return reorder(state, target, to)
     }
     default:
       return state
