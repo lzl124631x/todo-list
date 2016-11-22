@@ -91,7 +91,7 @@ class Todo extends React.Component {
       case PULL_RIGHT_ITEM: {
         return {
           x: this.slowDownX(Math.max(delta[0], 0)),
-          y,
+          y: spring(y),
           scale: 1
         }
       }
@@ -119,7 +119,7 @@ class Todo extends React.Component {
       case PULL_LEFT_ITEM: {
         return {
           x: this.slowDownX(Math.min(delta[0], 0)),
-          y,
+          y: spring(y),
           scale: 1
         }
       }
