@@ -191,7 +191,8 @@ class Todo extends React.Component {
       || (uiState === ITEM_JUST_ADDED && order === 0)
       || this.state.uiState === TOGGLING_VERTICAL_MOVE
       // || this.state.uiState === RELEASED_LONG_PRESS
-      || this.state.uiState === LONG_PRESS_REORDER) {
+      || this.state.uiState === LONG_PRESS_REORDER
+      || this.state.uiState === RELEASED_TO_DEFAULT) {
       style.zIndex = 10000
     }
     return style
@@ -263,14 +264,28 @@ class Todo extends React.Component {
     const { delta, uiState } = this.state
     switch (uiState) {
       case PULL_RIGHT_ITEM: {
-        const nextUiState = delta[0] > H_PAN_THRESHOLD ? RELEASED_TO_TOGGLE : RELEASED_TO_DEFAULT
+        let nextUiState
+        if (delta[0] > H_PAN_THRESHOLD) {
+          nextUiState = RELEASED_TO_TOGGLE
+        } else if (delta[0] > 0) {
+          nextUiState = RELEASED_TO_DEFAULT
+        } else {
+          nextUiState = DEFAULT
+        }
         this.setState({
           uiState: nextUiState
         })
         break
       }
       case PULL_LEFT_ITEM: {
-        const nextUiState = delta[0] < -H_PAN_THRESHOLD ? RELEASED_TO_DELETE : RELEASED_TO_DEFAULT
+        let nextUiState
+        if (delta[0] < -H_PAN_THRESHOLD) {
+         nextUiState = RELEASED_TO_DELETE
+        } else if (delta[0] < 0) {
+          nextUiState = RELEASED_TO_DEFAULT
+        } else {
+          nextUiState = DEFAULT
+        }
         this.setState({
           uiState: nextUiState
         })
