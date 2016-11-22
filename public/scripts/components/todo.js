@@ -51,29 +51,6 @@ class Todo extends React.Component {
     }
   }
 
-  getToggleConfigs () {
-    const { y } = this.props
-    return { x: spring(0), y, scale: 1, zIndex: 10000 }
-    // ,
-    //   onRest: () => {
-    //     this.props.onToggle(this.props.id)
-    //   }
-  }
-
-  getPressConfigs () {
-    const { y } = this.props
-    const x = this.state.delta[0]
-    let offsetX = x
-    if (Math.abs(x) > H_PAN_THRESHOLD) {
-      offsetX = (offsetX > 0 ? 1 : -1) * ((Math.abs(offsetX) - H_PAN_THRESHOLD) / 5 + H_PAN_THRESHOLD)
-    }
-    return { x: offsetX, y, scale: 1, zIndex: 0 }
-  }
-
-  getLongPressConfigs () {
-    return { x: 0, y: this.props.y, scale: spring(1.05), zIndex: 10000 }
-  }
-
   getMotionStyle () {
     // x config { stiffness: 1000, damping: 40 }
     const xConfig = { stiffness: 1000, damping: 40 }
@@ -85,56 +62,56 @@ class Todo extends React.Component {
         return {
           x: 0,
           y: spring(y),
-          scale: spring(1)
+          z: spring(0)
         }
       }
       case PULL_RIGHT_ITEM: {
         return {
           x: this.slowDownX(Math.max(delta[0], 0)),
           y: spring(y),
-          scale: 1
+          z: 0
         }
       }
       case RELEASED_TO_DEFAULT: {
         return {
           x: spring(0, xConfig),
           y: spring(y),
-          scale: 1
+          z: spring(0)
         }
       }
       case RELEASED_TO_TOGGLE: {
         return {
           x: spring(0, xConfig),
           y,
-          scale: 1
+          z: 0
         }
       }
       case TOGGLING_VERTICAL_MOVE: {
         return {
           x: 0,
           y: spring(y),
-          scale: 1
+          z: 0
         }
       }
       case PULL_LEFT_ITEM: {
         return {
           x: this.slowDownX(Math.min(delta[0], 0)),
           y: spring(y),
-          scale: 1
+          z: 0
         }
       }
       case RELEASED_TO_DELETE: {
         return {
           x: spring(-pageWidth, xConfig),
           y,
-          scale: 1
+          z: 0
         }
       }
       case LONG_PRESS_REORDER: {
         return {
           x: 0,
           y: this.state.pressOrder * ITEM_HEIGHT + delta[1],
-          scale: spring(1.05)
+          z: spring(1)
         }
       }
     }
@@ -169,13 +146,11 @@ class Todo extends React.Component {
     }
   }
 
-  getStyle (x, y, scale) {
+  getStyle (x, y, z) {
     const { uiState, todoId, id, order } = this.props
     const isTarget = (todoId === id)
     const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
     let style = {}
-    // boxShadow
-    style.boxShadow = this.state.uiState === LONG_PRESS_REORDER ? '0 .2em .3em .2em rgba(0,0,0,0.2)' : ''
     // backgroundColor
     style.backgroundColor = `hsl(${354.1 + 3 * order},100%,48%)`
     if (isToggled) {
@@ -183,8 +158,14 @@ class Todo extends React.Component {
       style.textDecoration = 'line-through'
     }
     // transform
+    let scale = 1 + z * .05
     style.WebkitTransform = `translate(${x}px,${y}px) scale(${scale})`
     style.transform = `translate(${x}px,${y}px) scale(${scale})`
+    // boxShadow
+    let shadowY = .2 * z
+    let shadowBlur = .3 * z
+    let shadowSpread = .2 * z
+    style.boxShadow = `0 ${shadowY}em ${shadowBlur}em ${shadowSpread}em rgba(0,0,0,0.2)`
     // zIndex
     style.zIndex = 0
     if (isTarget
@@ -325,12 +306,12 @@ class Todo extends React.Component {
           }
         }}>
         <Motion
-          defaultStyle={{ x: 0, y: 0, scale: 1 }}
+          defaultStyle={{ x: 0, y: 0, z: 0 }}
           style={ motionStyle }
           onRest={ motionOnRest }
           fakeKey={this.props.id}>
-          {({ x, y, scale }) => {
-            const style = this.getStyle(x, y, scale)
+          {({ x, y, z }) => {
+            const style = this.getStyle(x, y, z)
             return <div
               className={classes}
               style={style}

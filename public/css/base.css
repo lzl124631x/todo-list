@@ -24,7 +24,7 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  transition: background .4s, box-shadow .4s
+  transition: background .4s;
 }
 
 .todo,
