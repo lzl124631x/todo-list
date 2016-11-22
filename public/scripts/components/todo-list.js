@@ -7,20 +7,27 @@ import AddTodo from '../containers/add-todo'
 import LongPress from '../containers/long-press'
 import { Motion, spring } from 'react-motion'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
+import Hammer from 'react-hammerjs'
+
+import {
+  DEFAULT,
+  PULL_DOWN_LIST,
+  RELEASED_AND_ADD,
+  CANCEL_ADD,
+  ITEM_JUST_ADDED,
+  PULL_RIGHT_ITEM,
+  PULL_LEFT_ITEM,
+  ITEM_TOGGLED,
+  LONG_PRESS_REORDER,
+  RELEASED_TOGGLE_ITEM,
+  RELEASED_DELETE_ITEM
+} from './ui-states'
 
 const H_PAN_THRESHOLD = 50
 
-const DEFAULT = 'DEFAULT'
-const PULL_DOWN_LIST = 'PULL_DOWN_LIST'
-const RELEASED_AND_ADD = 'RELEASED_AND_ADD'
-const CANCEL_ADD = 'CANCEL_ADD'
-const ITEM_JUST_ADDED = 'ITEM_JUST_ADDED'
-const PULL_RIGHT_ITEM = 'PULL_RIGHT_ITEM'
-const PULL_LEFT_ITEM = 'PULL_LEFT_ITEM'
-const ITEM_TOGGLED = 'ITEM_TOGGLED'
-const LONG_PRESS_REORDER = 'LONG_PRESS_REORDER'
-const RELEASED_TOGGLE_ITEM = 'RELEASED_TOGGLE_ITEM'
-const RELEASED_DELETE_ITEM = 'RELEASED_DELETE_ITEM'
+function log(e) {
+  console.log(e.type, e)
+}
 
 const INITIAL_STATE = {
   // The mouse down position relative to screen
@@ -101,7 +108,7 @@ class TodoList extends React.Component {
             // Pulling down
             this.setState({ uiState: PULL_DOWN_LIST })
           }
-          break;
+          break
         }
         case LONG_PRESS_REORDER: {
           const itemY = pageY - this.state.pressPos
@@ -109,7 +116,7 @@ class TodoList extends React.Component {
           if (row !== todo.order) {
             this.props.onReorder(this.state.todoId, row)
           }
-          break;
+          break
         }
       }
     }
@@ -134,22 +141,25 @@ class TodoList extends React.Component {
         } else if (delta[1] > 0){
           state.uiState = CANCEL_ADD
         }
-        break;
+        break
       }
       case PULL_RIGHT_ITEM: {
         if (Math.abs(delta[0]) > H_PAN_THRESHOLD
           && todo.done === this.state.pressedItemInitialState) {
+          // toggle todo
+        // 1. motion, x -> 0, background -> green
+        // 2. motion, y -> bottom, background -> gray
           state.uiState = RELEASED_TOGGLE_ITEM
           state.todoId = this.state.todoId
         }
-        break;
+        break
       }
       case PULL_LEFT_ITEM: {
         if (Math.abs(delta[0]) > H_PAN_THRESHOLD) {
           state.uiState = RELEASED_DELETE_ITEM
           state.todoId = this.state.todoId
         }
-        break;
+        break
       }
     }
     this.setState(state)
@@ -200,74 +210,38 @@ class TodoList extends React.Component {
 
   getItemProps (todo, y) {
     const { delta, todoId, uiState, press, pressPos } = this.state
-    const isPressed = (todoId === todo.id)
-    const isLongPressed = (isPressed && uiState === LONG_PRESS_REORDER)
+    const isTarget = (todoId === todo.id)
     let itemX = 0
     let itemY = y + todo.order * ITEM_HEIGHT
-    if (isPressed) {
+    if (isTarget) {
       switch (uiState) {
         case LONG_PRESS_REORDER: {
           itemY = press[1] + delta[1] - pressPos
-          break;
+          break
         }
         case PULL_RIGHT_ITEM: {
           itemX = Math.max(delta[0], 0)
-          break;
+          break
         }
         case PULL_LEFT_ITEM: {
           itemX = Math.min(delta[0], 0)
-          break;
+          break
         }
       }
     }
-    let onRest, classes, toggled = (uiState === RELEASED_TOGGLE_ITEM && todo.id === todoId), deleting = (uiState === RELEASED_DELETE_ITEM && todo.id === todoId)
-    if (toggled) {
-      classes = 'just-toggled'
-      onRest = () => {
-        this.props.onToggle(todoId)
-      }
-    }
-    if (uiState === RELEASED_DELETE_ITEM)
-    console.log('!!!!', '>>> ', todoId)
-    if (deleting) {
-      console.log('deleting')
-      itemX = -300
-      onRest = () => {
-        this.props.onDelete(todoId)
-      }
-    }
-    let zIndex = this.getItemZIndex(todo)
-    let boxShadow = isLongPressed ? '0 .2em .3em .2em rgba(0, 0, 0, 0.2)' : ''
     return {
       itemX,
-      itemY,
-      isPressed,
-      isLongPressed,
-      zIndex,
-      uiState,
-      onRest,
-      classes,
-      toggled,
-      boxShadow
+      itemY
     }
-  }
-
-  getItemZIndex (todo) {
-    const { uiState, todoId } = this.state
-    let zIndex = 0
-    if ((uiState === LONG_PRESS_REORDER && todo.id === todoId)
-      || (uiState === ITEM_JUST_ADDED && todo.order === 0)) {
-      zIndex = 10000
-    }
-    return zIndex
   }
 
   render() {
-    let { uiState } = this.state
+    let { uiState, todoId } = this.state
     const style = {
       y: this.getListY(),
       backdropOpacity: this.getBackdropOpacity()
     }
+
     return (
       <Motion style={style} onRest={this.onListRest}>
         { ({ y, backdropOpacity }) =>
@@ -278,39 +252,29 @@ class TodoList extends React.Component {
             afterAdded={this.handleAdd} /> : undefined }
             <LongPress onLongPress={this.handleLongPress}>
               <div className="todo-list"
-                onTouchStart={this.handleTouchStart}
-                onMouseDown={this.handleMouseDown}
-                onTouchMove={this.handleTouchMove}
-                onMouseMove={this.handleMouseMove}
-                onTouchEnd={this.handleTouchEnd}
-                onMouseUp={this.handleMouseUp}>
+                // onTouchStart={this.handleTouchStart}
+                // onMouseDown={this.handleMouseDown}
+                // onTouchMove={this.handleTouchMove}
+                // onMouseMove={this.handleMouseMove}
+                // onTouchEnd={this.handleTouchEnd}
+                // onMouseUp={this.handleMouseUp}
+                >
                 {
                   this.props.todos.map((todo, i) => {
                     const {
                       itemX,
                       itemY,
-                      isPressed,
-                      isLongPressed,
-                      zIndex,
-                      uiState,
-                      onRest,
-                      classes,
-                      toggled,
-                      boxShadow
                     } = this.getItemProps(todo, y)
                     return <Todo
                       key={ todo.id }
                       {...todo}
-                      x={ itemX }
+                      // x={ itemX }
                       y={ itemY }
-                      isPressed={ isPressed }
-                      isLongPressed={ isLongPressed }
-                      zIndex={ zIndex }
                       uiState={ uiState }
-                      onRest={ onRest }
-                      classes={ classes }
-                      toggled={ toggled }
-                      boxShadow={ boxShadow }
+                      todoId={ todoId }
+                      onToggle={ this.props.onToggle }
+                      onDelete={ this.props.onDelete }
+                      onReorder={ this.props.onReorder }
                     />})
                 }
                 <div className="backdrop" style={{
@@ -340,6 +304,6 @@ TodoList.propTypes = {
 
 TodoList.contextTypes = {
   store: PropTypes.object.isRequired
-};
+}
 
 export default TodoList

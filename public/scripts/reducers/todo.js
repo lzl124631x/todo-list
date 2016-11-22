@@ -12,9 +12,7 @@ const todo = (state = {}, action, todos) => {
         order: action.order
       }
     case TOGGLE_TODO:
-      if (state.id !== action.id) {
-        return state
-      }
+      if (state.id !== action.id) return state
       return Object.assign({}, state, {
         done: !state.done
       })
