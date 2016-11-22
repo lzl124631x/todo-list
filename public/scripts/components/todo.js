@@ -203,21 +203,6 @@ class Todo extends React.Component {
     if (nextState.uiState != uiState) {
       console.log('state change from', uiState, 'to', nextState.uiState)
     }
-    // switch (state) {
-    //   case 'DEFAULT': {
-    //     if (nextProps.x > 0) {
-    //       this.setState({ state: 'PULL_RIGHT_ITEM' })
-    //     }
-    //     break
-    //   }
-    //   case 'PULL_RIGHT_ITEM': {
-    //     if (nextProps.todoId === this.props.id) {
-    //       console.log('released', this.props.text, nextProps, nextState)
-    //       this.setState({ state: 'RELEASED_TOGGLE_ITEM' })
-    //     }
-    //     break
-    //   }
-    // }
   }
 
   toggle () {
@@ -235,14 +220,12 @@ class Todo extends React.Component {
     const deltaY = this.state.delta[1]
     const sign = deltaY > 0 ? 1 : -1
     const offset = sign * Math.floor((Math.abs(deltaY) + ITEM_HEIGHT / 2) / ITEM_HEIGHT)
-    console.log(offset, this.state.pressOrder, this.props.order)
     if (this.state.pressOrder + offset != this.props.order) {
       this.props.onReorder(this.props.id, this.state.pressOrder + offset)
     }
   }
 
   handlePan ({ deltaX, deltaY }) {
-    console.log('handle pan', { deltaX, deltaY})
     const delta = [deltaX, deltaY]
     this.setState({ delta: delta })
     switch (this.state.uiState) {
@@ -273,21 +256,23 @@ class Todo extends React.Component {
           nextUiState = DEFAULT
         }
         this.setState({
-          uiState: nextUiState
+          uiState: nextUiState,
+          delta: [0, 0]
         })
         break
       }
       case PULL_LEFT_ITEM: {
         let nextUiState
         if (delta[0] < -H_PAN_THRESHOLD) {
-         nextUiState = RELEASED_TO_DELETE
+          nextUiState = RELEASED_TO_DELETE
         } else if (delta[0] < 0) {
           nextUiState = RELEASED_TO_DEFAULT
         } else {
           nextUiState = DEFAULT
         }
         this.setState({
-          uiState: nextUiState
+          uiState: nextUiState,
+          delta: [0, 0]
         })
         break
       }
@@ -317,7 +302,6 @@ class Todo extends React.Component {
   }
 
   handlePressUp () {
-    console.log('pressup')
     this.setState({
       uiState: RELEASED_TO_DEFAULT
     })
