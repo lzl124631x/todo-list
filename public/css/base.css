@@ -24,7 +24,6 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  transition: background .4s;
 }
 
 .todo,
@@ -72,7 +71,7 @@ body {
 
 .todo.done {
   text-decoration: line-through;
-  background-color: #444 !important;
+  /*background-color: #444 !important;*/
   color: #777;
 }
 

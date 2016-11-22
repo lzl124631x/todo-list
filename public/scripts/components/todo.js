@@ -52,7 +52,6 @@ class Todo extends React.Component {
   }
 
   getMotionStyle () {
-    // x config { stiffness: 1000, damping: 40 }
     const xConfig = { stiffness: 1000, damping: 40 }
     // slow motion, for debug , { stiffness: 20, damping: 30}
     const { uiState, delta } = this.state
@@ -69,7 +68,8 @@ class Todo extends React.Component {
         return {
           x: this.slowDownX(Math.max(delta[0], 0)),
           y: spring(y),
-          z: 0
+          z: 0,
+          percent: 0
         }
       }
       case RELEASED_TO_DEFAULT: {
@@ -83,14 +83,16 @@ class Todo extends React.Component {
         return {
           x: spring(0, xConfig),
           y,
-          z: 0
+          z: 0,
+          percent: spring(1, xConfig)
         }
       }
       case TOGGLING_VERTICAL_MOVE: {
         return {
           x: 0,
-          y: spring(y),
-          z: 0
+          y: spring(y, { stiffness: 20, damping: 30}),
+          z: 0,
+          percent: spring(2, { stiffness: 20, damping: 30})
         }
       }
       case PULL_LEFT_ITEM: {
@@ -146,17 +148,35 @@ class Todo extends React.Component {
     }
   }
 
-  getStyle (x, y, z) {
+  getStyle (x, y, z, percent) {
     const { uiState, todoId, id, order } = this.props
     const isTarget = (todoId === id)
     const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
     let style = {}
     // backgroundColor
-    style.backgroundColor = `hsl(${354.1 + 3 * order},100%,48%)`
-    if (isToggled) {
-      style.backgroundColor = '#399131'
-      style.textDecoration = 'line-through'
+    let colorH = 354.1 + 3 * order
+    let colorS = 100
+    let colorL = 48
+    if (this.state.uiState === RELEASED_TO_TOGGLE) {
+      // #399131
+      let endH = 115
+      let endS = 49.5
+      let endL = 38
+      colorH = colorH + (endH - colorH) * percent
+      colorS = colorS + (endS - colorS) * percent
+      colorL = colorL + (endL - colorL) * percent
+    } else if (this.state.uiState === TOGGLING_VERTICAL_MOVE) {
+      percent -= 1
+      // #444
+      let endH = 0
+      let endS = 0
+      let endL = 26.7
+      colorH = colorH + (endH - colorH) * percent
+      colorS = colorS + (endS - colorS) * percent
+      colorL = colorL + (endL - colorL) * percent
+      console.log(percent, colorH, colorS, colorL)
     }
+    style.backgroundColor = `hsl(${colorH},${colorS}%,${colorL}%)`
     // transform
     let scale = 1 + z * .05
     style.WebkitTransform = `translate(${x}px,${y}px) scale(${scale})`
@@ -171,7 +191,6 @@ class Todo extends React.Component {
     if (isTarget
       || (uiState === ITEM_JUST_ADDED && order === 0)
       || this.state.uiState === TOGGLING_VERTICAL_MOVE
-      // || this.state.uiState === RELEASED_LONG_PRESS
       || this.state.uiState === LONG_PRESS_REORDER
       || this.state.uiState === RELEASED_TO_DEFAULT) {
       style.zIndex = 10000
@@ -236,6 +255,7 @@ class Todo extends React.Component {
         } else {
           nextUiState = DEFAULT
         }
+        console.log('end', this.state.delta)
         this.setState({
           uiState: nextUiState,
           delta: [0, 0]
@@ -274,7 +294,7 @@ class Todo extends React.Component {
   }
 
   handlePress (e) {
-    const { pageX, pageY} = e.pointers[0]
+    const { pageX, pageY } = e.pointers[0]
     this.setState({
       uiState: LONG_PRESS_REORDER,
       press: [pageX, pageY],
@@ -310,8 +330,8 @@ class Todo extends React.Component {
           style={ motionStyle }
           onRest={ motionOnRest }
           fakeKey={this.props.id}>
-          {({ x, y, z }) => {
-            const style = this.getStyle(x, y, z)
+          {({ x, y, z, percent }) => {
+            const style = this.getStyle(x, y, z, percent)
             return <div
               className={classes}
               style={style}
