@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import classNames from 'classnames'
 import $ from 'jquery'
 import { Motion, spring } from 'react-motion'
-import { clamp, ITEM_HEIGHT } from '../containers/util'
+import { clamp, ITEM_HEIGHT, hslToRgb, hexToRgb, interpolate } from '../containers/util'
 import {
   DEFAULT,
   PULL_DOWN_LIST,
@@ -90,9 +90,9 @@ class Todo extends React.Component {
       case TOGGLING_VERTICAL_MOVE: {
         return {
           x: 0,
-          y: spring(y, { stiffness: 20, damping: 30}),
+          y: spring(y),
           z: 0,
-          percent: spring(2, { stiffness: 20, damping: 30})
+          percent: spring(2)
         }
       }
       case PULL_LEFT_ITEM: {
@@ -154,29 +154,19 @@ class Todo extends React.Component {
     const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
     let style = {}
     // backgroundColor
-    let colorH = 354.1 + 3 * order
-    let colorS = 100
-    let colorL = 48
+    let RGB = hslToRgb([354.1 + 3 * order, 1, .48])
     if (this.state.uiState === RELEASED_TO_TOGGLE) {
-      // #399131
-      let endH = 115
-      let endS = 49.5
-      let endL = 38
-      colorH = colorH + (endH - colorH) * percent
-      colorS = colorS + (endS - colorS) * percent
-      colorL = colorL + (endL - colorL) * percent
+      RGB = interpolate(RGB, hexToRgb('#399131'), percent)
     } else if (this.state.uiState === TOGGLING_VERTICAL_MOVE) {
+      RGB = hexToRgb('#399131')
       percent -= 1
       // #444
-      let endH = 0
-      let endS = 0
-      let endL = 26.7
-      colorH = colorH + (endH - colorH) * percent
-      colorS = colorS + (endS - colorS) * percent
-      colorL = colorL + (endL - colorL) * percent
-      console.log(percent, colorH, colorS, colorL)
+      RGB = interpolate(RGB, hexToRgb('#444'), percent)
     }
-    style.backgroundColor = `hsl(${colorH},${colorS}%,${colorL}%)`
+    if (this.props.done && this.state.uiState === DEFAULT) {
+      RGB = hexToRgb('#444')
+    }
+    style.backgroundColor = `rgb(${Math.floor(RGB[0])},${Math.floor(RGB[1])},${Math.floor(RGB[2])})`
     // transform
     let scale = 1 + z * .05
     style.WebkitTransform = `translate(${x}px,${y}px) scale(${scale})`
