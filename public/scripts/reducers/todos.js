@@ -50,7 +50,12 @@ const todos = (state = [], action) => {
           order = t.order
         }
       })
-      const to = (firstDone ? firstDone.order : state.length) - 1
+      let to
+      if (target.done) {// toggling from done to undone
+        to = firstDone.order
+      } else {// toggling from undone to done
+        to = (firstDone ? firstDone.order : state.length) - 1
+      }
       console.log('toggle', from, to)
       return reorder(state.map(t => todo(t, action)), target, to)
     }
