@@ -28,6 +28,9 @@ const noop = () => {}
 
 const H_PAN_THRESHOLD = 50
 
+const toggledGreen = hexToRgb('#399131')
+const doneGray = hexToRgb('#444')
+
 let pageWidth
 $(() => {
   pageWidth = $('body').width()
@@ -148,25 +151,36 @@ class Todo extends React.Component {
     }
   }
 
+  getBackgroundColor (percent) {
+    let baseRGB = hslToRgb([354.1 + 3 * this.props.order, 1, .48])
+    let RGB = this.props.done ? doneGray : baseRGB
+    switch (this.state.uiState) {
+      case RELEASED_TO_TOGGLE: {
+        if (!this.props.done) {
+          RGB = interpolate(baseRGB, toggledGreen, percent)
+        }
+        break
+      }
+      case TOGGLING_VERTICAL_MOVE: {
+        percent -= 1
+        if (this.props.done) {
+          RGB = interpolate(toggledGreen, doneGray, percent)
+        } else {
+          RGB = interpolate(doneGray, baseRGB, percent)
+        }
+        break
+      }
+    }
+    return `rgb(${Math.floor(RGB[0])},${Math.floor(RGB[1])},${Math.floor(RGB[2])})`
+  }
+
   getStyle (x, y, z, percent) {
     const { uiState, todoId, id, order } = this.props
     const isTarget = (todoId === id)
     const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
     let style = {}
     // backgroundColor
-    let RGB = hslToRgb([354.1 + 3 * order, 1, .48])
-    if (this.state.uiState === RELEASED_TO_TOGGLE) {
-      RGB = interpolate(RGB, hexToRgb('#399131'), percent)
-    } else if (this.state.uiState === TOGGLING_VERTICAL_MOVE) {
-      RGB = hexToRgb('#399131')
-      percent -= 1
-      // #444
-      RGB = interpolate(RGB, hexToRgb('#444'), percent)
-    }
-    if (this.props.done && this.state.uiState === DEFAULT) {
-      RGB = hexToRgb('#444')
-    }
-    style.backgroundColor = `rgb(${Math.floor(RGB[0])},${Math.floor(RGB[1])},${Math.floor(RGB[2])})`
+    style.backgroundColor = this.getBackgroundColor(percent)
     // transform
     let scale = 1 + z * .05
     style.WebkitTransform = `translate(${x}px,${y}px) scale(${scale})`
