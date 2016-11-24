@@ -1,6 +1,6 @@
 export const DEFAULT = 'DEFAULT'
 export const PULL_DOWN_LIST = 'PULL_DOWN_LIST'
-export const RELEASED_AND_ADD = 'RELEASED_AND_ADD'
+export const RELEASED_TO_ADD = 'RELEASED_TO_ADD'
 export const CANCEL_ADD = 'CANCEL_ADD'
 export const ITEM_JUST_ADDED = 'ITEM_JUST_ADDED'
 export const PULL_RIGHT_ITEM = 'PULL_RIGHT_ITEM'
