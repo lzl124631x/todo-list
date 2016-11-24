@@ -24,6 +24,7 @@ const RELEASED_TO_DEFAULT = 'RELEASED_TO_DEFAULT'
 const TOGGLING_VERTICAL_MOVE = 'TOGGLING_VERTICAL_MOVE'
 const RELEASED_TO_DELETE = 'RELEASED_TO_DELETE'
 const FOLD_TO_DELETE = 'FOLD_TO_DELETE'
+const EDITING_LIST = 'EDITING_LIST'
 const noop = () => {}
 
 const H_PAN_THRESHOLD = 50
@@ -120,6 +121,13 @@ class Todo extends React.Component {
           z: spring(1)
         }
       }
+      case EDITING_LIST: {
+        return {
+          x: 0,
+          y,
+          z: 0
+        }
+      }
     }
   }
 
@@ -206,7 +214,18 @@ class Todo extends React.Component {
   componentWillUpdate(nextProps, nextState) {
     const { uiState } = this.state
     if (nextState.uiState != uiState) {
-      console.log('state change from', uiState, 'to', nextState.uiState)
+      console.log(`%cITEM state change from ${uiState} to ${nextState.uiState}`, "color:red")
+      this.props.onItemStateChange(this.props.id, nextState.uiState)
+    }
+    if (nextProps.uiState === PULL_DOWN_LIST && this.state.uiState != EDITING_LIST) {
+      this.setState({
+        uiState: EDITING_LIST
+      })
+    }
+    if (nextProps.uiState === DEFAULT && this.state.uiState != DEFAULT) {
+      this.setState({
+        uiState: DEFAULT
+      })
     }
   }
 

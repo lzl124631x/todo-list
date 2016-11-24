@@ -23,6 +23,8 @@ import {
 } from './ui-states'
 
 const RELEASED_TO_DEFAULT = 'RELEASED_TO_DEFAULT'
+const EDITING_ITEM = 'EDITING_ITEM'
+const EDITING_LIST = 'EDITING_LIST'
 
 const H_PAN_THRESHOLD = 50
 
@@ -33,7 +35,8 @@ function log(e) {
 const INITIAL_STATE = {
   // The mouse move delta
   delta: [0, 0],
-  uiState: DEFAULT
+  uiState: DEFAULT,
+  editingItems: {}
 }
 
 class TodoList extends React.Component {
@@ -43,13 +46,14 @@ class TodoList extends React.Component {
     this.handleAdd = this.handleAdd.bind(this)
     this.handlePan = this.handlePan.bind(this)
     this.handlePanEnd = this.handlePanEnd.bind(this)
+    this.handleItemStateChange = this.handleItemStateChange.bind(this)
     this.state = INITIAL_STATE
   }
 
   componentWillUpdate (nextProps, nextState) {
      const { uiState } = this.state
     if (nextState.uiState != uiState) {
-      console.log('LIST state change from', uiState, 'to', nextState.uiState)
+      console.log(`%cLIST state change from ${uiState} to ${nextState.uiState}`, "color:blue")
     }
   }
 
@@ -69,17 +73,25 @@ class TodoList extends React.Component {
   }
 
   handlePan ({ deltaX, deltaY }) {
-    this.setState({
-        delta: [deltaX, deltaY]
-    })
     switch (this.state.uiState) {
       case DEFAULT:
       case CANCEL_ADD: {
         if (Math.abs(deltaY) > Math.abs(deltaX)) {
           this.setState({
-            uiState: PULL_DOWN_LIST
+            uiState: PULL_DOWN_LIST,
+            delta: [deltaX, deltaY]
           })
         }
+        break
+      }
+      case PULL_DOWN_LIST: {
+        this.setState({
+          delta: [deltaX, deltaY]
+        })
+        break
+      }
+      case EDITING_ITEM: {
+        // TODO: stop the current recognizer
         break
       }
     }
@@ -135,6 +147,33 @@ class TodoList extends React.Component {
     }
   }
 
+  handleItemStateChange (id, itemUiState) {
+    switch (itemUiState) {
+      case EDITING_LIST: {
+        break
+      }
+      case DEFAULT: {
+        let { editingItems } = this.state
+        delete editingItems[id]
+        let nextUiState = Object.getOwnPropertyNames(editingItems).length > 0 ? EDITING_ITEM : DEFAULT
+        this.setState({
+          uiState: nextUiState,
+          editingItems
+        })
+        break
+      }
+      default: {
+        let { editingItems } = this.state
+        editingItems[id] = true
+        this.setState({
+          uiState: EDITING_ITEM,
+          editingItems
+        })
+        break
+      }
+    }
+  }
+
   render() {
     let { uiState, todoId } = this.state
     const motionStyle = this.getMotionStyle()
@@ -171,6 +210,7 @@ class TodoList extends React.Component {
                         onToggle={ this.props.onToggle }
                         onDelete={ this.props.onDelete }
                         onReorder={ this.props.onReorder }
+                        onItemStateChange={ this.handleItemStateChange }
                       />})
                   }
                   <div className="backdrop" style={{
