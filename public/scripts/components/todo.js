@@ -28,7 +28,7 @@ const noop = () => {}
 
 const H_PAN_THRESHOLD = 50
 
-const toggledGreen = hexToRgb('#399131')
+const toggledGreen = hexToRgb('#008b00')
 const doneGray = hexToRgb('#444')
 
 let pageWidth
