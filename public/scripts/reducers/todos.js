@@ -27,6 +27,17 @@ function reorder(todos, todo, to) {
   return _todos
 }
 
+function findFirstDone (todos) {
+  let firstDone, order = Number.MAX_VALUE
+  todos.forEach(t => {
+    if (t.done && t.order < order) {
+      firstDone = t
+      order = t.order
+    }
+  })
+  return firstDone
+}
+
 const todos = (state = [], action) => {
   switch (action.type) {
     case ADD_TODO: {
@@ -43,13 +54,7 @@ const todos = (state = [], action) => {
       const { id } = action
       let target = state.find(t => t.id === action.id)
       let from = target.order
-      let firstDone, order = Number.MAX_VALUE
-      state.forEach(t => {
-        if (t.done && t.order < order) {
-          firstDone = t
-          order = t.order
-        }
-      })
+      let firstDone = findFirstDone(state)
       let to
       if (target.done) {// toggling from done to undone
         to = firstDone.order
@@ -74,6 +79,11 @@ const todos = (state = [], action) => {
       let { id, to } = action
       to = clamp(to, 0, state.length - 1)
       let target = state.find(t => t.id === action.id)
+      if (target.done) return state
+      let firstDone = findFirstDone(state)
+      if (firstDone) {
+        to = clamp(to, 0, firstDone.order - 1)
+      }
       return reorder(state, target, to)
     }
     default:
