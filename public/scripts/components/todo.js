@@ -58,7 +58,8 @@ class Todo extends React.Component {
     const xConfig = { stiffness: 1000, damping: 40 }
     // slow motion, for debug , { stiffness: 20, damping: 30}
     const { uiState, delta } = this.state
-    const { y } = this.props
+    const { uiState: ListUiState } = this.props
+    const y = this.props.order * ITEM_HEIGHT
     switch (uiState) {
       case DEFAULT: {
         return {
@@ -259,7 +260,6 @@ class Todo extends React.Component {
         } else {
           nextUiState = DEFAULT
         }
-        console.log('end', this.state.delta)
         this.setState({
           uiState: nextUiState,
           delta: [0, 0]
