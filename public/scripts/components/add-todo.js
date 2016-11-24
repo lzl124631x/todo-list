@@ -16,7 +16,7 @@ let AddTodo = ({ onAdd, y, releaseAndAdd, cancelAdd, afterAdded }) => {
   return (
     <div className="new-item-row"
          style={{
-          transform: `perspective(300px) translateY(${y}px) rotateX(${clamp((1 - y / ITEM_HEIGHT) * 90, 0, 90)}deg)`,
+          transform: `perspective(300px) rotateX(${clamp((1 - y / ITEM_HEIGHT) * 90, 0, 90)}deg)`,
           filter: `brightness(${clamp(y / ITEM_HEIGHT, .5, 1)})`
         }}>
       <input className="new-item-input"

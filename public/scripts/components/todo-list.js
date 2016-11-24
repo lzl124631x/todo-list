@@ -4,7 +4,6 @@ import classNames from 'classnames'
 import $ from 'jquery'
 import Todo from './todo'
 import AddTodo from '../containers/add-todo'
-import LongPress from '../containers/long-press'
 import { Motion, spring } from 'react-motion'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
 import Hammer from 'react-hammerjs'
@@ -48,121 +47,19 @@ const INITIAL_STATE = {
 class TodoList extends React.Component {
   constructor(props) {
     super(props)
-    this.handleTouchStart = this.handleTouchStart.bind(this)
-    this.handleMouseDown = this.handleMouseDown.bind(this)
-    this.handleTouchMove = this.handleTouchMove.bind(this)
-    this.handleMouseMove = this.handleMouseMove.bind(this)
-    this.handleTouchEnd = this.handleTouchEnd.bind(this)
-    this.handleMouseUp = this.handleMouseUp.bind(this)
-    this.handleLongPress = this.handleLongPress.bind(this)
     this.cancelAdd = this.cancelAdd.bind(this)
     this.handleAdd = this.handleAdd.bind(this)
     this.onListRest = this.onListRest.bind(this)
-    this.getItem = this.getItem.bind(this)
+    this.handlePan = this.handlePan.bind(this)
+    this.handlePanEnd = this.handlePanEnd.bind(this)
     this.state = INITIAL_STATE
   }
 
-  getItem (id) {
-    return this.props.todos.find(t => t.id === id)
-  }
-  
-  handleTouchStart ({ touches }) {
-    this.handleMouseDown(touches[0])
-  }
-
-  handleMouseDown ({ pageX, pageY }) {
-    const targetOrder = Math.floor(pageY / ITEM_HEIGHT)
-    if (targetOrder >= this.props.todos.length) {
-      // Pressed on empty space
-    } else {
-      // Pressed on an item
-      const todo = this.props.todos.find(t => t.order == targetOrder)
-      this.setState({
-        press: [ pageX, pageY ],
-        isPressed: true,
-        todoId: todo.id,
-        pressedItemInitialState: todo.done,
-        pressPos: pageY - todo.order * ITEM_HEIGHT
-      })
+  componentWillUpdate (nextProps, nextState) {
+     const { uiState } = this.state
+    if (nextState.uiState != uiState) {
+      console.log('LIST state change from', uiState, 'to', nextState.uiState)
     }
-  }
-  
-  handleTouchMove (e) {
-    e.preventDefault()
-    this.handleMouseMove(e.touches[0])
-  }
-
-  handleMouseMove ({ pageX, pageY }) {
-    if (this.state.isPressed) {
-      const [x, y] = this.state.press
-      const delta = [ pageX - x, pageY - y ]
-      this.setState({ delta: delta })
-      const { uiState } = this.state
-      const todo = this.getItem(this.state.todoId)
-      switch (uiState) {
-        case DEFAULT: {
-          if (Math.abs(delta[0]) > Math.abs(delta[1])) {
-            // Pulling horizontally
-            this.setState({ uiState: delta[0] > 0 ? PULL_RIGHT_ITEM : PULL_LEFT_ITEM })
-          } else if (delta[1] > 0) {
-            // Pulling down
-            this.setState({ uiState: PULL_DOWN_LIST })
-          }
-          break
-        }
-        case LONG_PRESS_REORDER: {
-          const itemY = pageY - this.state.pressPos
-          const row = clamp(Math.round(itemY / ITEM_HEIGHT), 0, this.props.todos.length - 1)
-          if (row !== todo.order) {
-            this.props.onReorder(this.state.todoId, row)
-          }
-          break
-        }
-      }
-    }
-  }
-  
-  handleTouchEnd (e) {
-    e.preventDefault()
-    this.handleMouseUp()
-  }
-
-  handleMouseUp () {
-    const { uiState, delta } = this.state
-    if (uiState === CANCEL_ADD) {
-      return
-    }
-    let state = Object.assign({}, INITIAL_STATE)
-    const todo = this.getItem(this.state.todoId)
-    switch (uiState) {
-      case PULL_DOWN_LIST: {
-        if (delta[1] > ITEM_HEIGHT) {
-          state.uiState = RELEASED_AND_ADD
-        } else if (delta[1] > 0){
-          state.uiState = CANCEL_ADD
-        }
-        break
-      }
-      case PULL_RIGHT_ITEM: {
-        if (Math.abs(delta[0]) > H_PAN_THRESHOLD
-          && todo.done === this.state.pressedItemInitialState) {
-          // toggle todo
-        // 1. motion, x -> 0, background -> green
-        // 2. motion, y -> bottom, background -> gray
-          state.uiState = RELEASED_TOGGLE_ITEM
-          state.todoId = this.state.todoId
-        }
-        break
-      }
-      case PULL_LEFT_ITEM: {
-        if (Math.abs(delta[0]) > H_PAN_THRESHOLD) {
-          state.uiState = RELEASED_DELETE_ITEM
-          state.todoId = this.state.todoId
-        }
-        break
-      }
-    }
-    this.setState(state)
   }
 
   cancelAdd (e) {
@@ -182,23 +79,6 @@ class TodoList extends React.Component {
 
   handleLongPress() {
     this.setState({ uiState: LONG_PRESS_REORDER })
-  }
-
-  getListY() {
-    switch (this.state.uiState) {
-      case RELEASED_AND_ADD: return spring(ITEM_HEIGHT)
-      case CANCEL_ADD: return spring(0)
-      case PULL_DOWN_LIST: {
-        // Can only pull down, cannot pull up
-        let y = Math.max(this.state.delta[1], 0)
-        // Once pull-down distance exceeds 5 x ITEM_HEIGHT, slow down
-        if (y > 5 * ITEM_HEIGHT) {
-          y = (y - 5 * ITEM_HEIGHT) / 5 + 5 * ITEM_HEIGHT
-        }
-        return y
-      }
-      default: return 0
-    }
   }
 
   getBackdropOpacity () {
@@ -235,55 +115,97 @@ class TodoList extends React.Component {
     }
   }
 
-  render() {
-    let { uiState, todoId } = this.state
-    const style = {
+  handlePan ({ deltaX, deltaY }) {
+    this.setState({
+        delta: [deltaX, deltaY]
+    })
+    if (this.state.uiState === DEFAULT && Math.abs(deltaY) > Math.abs(deltaX)) {
+      this.setState({
+        uiState: PULL_DOWN_LIST
+      })
+    }
+  }
+  
+  handlePanEnd () {
+    const { uiState } = this.state
+    switch (uiState) {
+      case 
+    }
+  }
+
+  getListY() {
+    switch (this.state.uiState) {
+      case RELEASED_AND_ADD: return spring(ITEM_HEIGHT)
+      case CANCEL_ADD: return spring(0)
+      case PULL_DOWN_LIST: {
+        // Can only pull down, cannot pull up
+        let y = Math.max(this.state.delta[1], 0)
+        // Once pull-down distance exceeds 5 x ITEM_HEIGHT, slow down
+        if (y > 5 * ITEM_HEIGHT) {
+          y = (y - 5 * ITEM_HEIGHT) / 5 + 5 * ITEM_HEIGHT
+        }
+        return y
+      }
+      default: return 0
+    }
+  }
+
+  getMotionStyle () {
+    return {
       y: this.getListY(),
       backdropOpacity: this.getBackdropOpacity()
     }
+  }
 
+  render() {
+    let { uiState, todoId } = this.state
+    const motionStyle = this.getMotionStyle()
     return (
-      <Motion style={style} onRest={this.onListRest}>
+      <Motion style={ motionStyle } onRest={this.onListRest}>
         { ({ y, backdropOpacity }) =>
-          <div style={{height: '100%' }}>
+          <div style={{
+            height: '100%',
+            transform: `translateY(${y}px)`
+          }}>
             { uiState === RELEASED_AND_ADD || uiState === PULL_DOWN_LIST || uiState === CANCEL_ADD ? <AddTodo y={y}
             releaseAndAdd={uiState === RELEASED_AND_ADD}
             cancelAdd={uiState == CANCEL_ADD}
             afterAdded={this.handleAdd} /> : undefined }
-            <LongPress onLongPress={this.handleLongPress}>
-              <div className="todo-list"
-                // onTouchStart={this.handleTouchStart}
-                // onMouseDown={this.handleMouseDown}
-                // onTouchMove={this.handleTouchMove}
-                // onMouseMove={this.handleMouseMove}
-                // onTouchEnd={this.handleTouchEnd}
-                // onMouseUp={this.handleMouseUp}
-                >
-                {
-                  this.props.todos.map((todo, i) => {
-                    const {
-                      itemX,
-                      itemY,
-                    } = this.getItemProps(todo, y)
-                    return <Todo
-                      key={ todo.id }
-                      {...todo}
-                      // x={ itemX }
-                      y={ itemY }
-                      uiState={ uiState }
-                      todoId={ todoId }
-                      onToggle={ this.props.onToggle }
-                      onDelete={ this.props.onDelete }
-                      onReorder={ this.props.onReorder }
-                    />})
+              <Hammer
+              onPan={ this.handlePan }
+              onPanEnd={ this.handlePanEnd }
+              options={{
+                recognizers: {
+                  pan: {
+                    threshold: 0
+                  }
                 }
-                <div className="backdrop" style={{
-                  display: backdropOpacity === 0 ? "none" : "block",
-                  background: `rgba(0,0,0,${backdropOpacity})`
-                }}
-                onTouchStart={this.cancelAdd}></div>
-              </div>
-            </LongPress>
+              }}>
+                <div className="todo-list">
+                  {
+                    this.props.todos.map((todo, i) => {
+                      const {
+                        itemX
+                      } = this.getItemProps(todo, y)
+                      return <Todo
+                        key={ todo.id }
+                        {...todo}
+                        // x={ itemX }
+                        y={ y }
+                        uiState={ uiState }
+                        todoId={ todoId }
+                        onToggle={ this.props.onToggle }
+                        onDelete={ this.props.onDelete }
+                        onReorder={ this.props.onReorder }
+                      />})
+                  }
+                  <div className="backdrop" style={{
+                    display: backdropOpacity === 0 ? "none" : "block",
+                    background: `rgba(0,0,0,${backdropOpacity})`
+                  }}
+                  onTouchStart={this.cancelAdd}></div>
+                </div>
+              </Hammer>
           </div>
         }
       </Motion>
