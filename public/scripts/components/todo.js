@@ -298,6 +298,7 @@ class Todo extends React.Component {
   }
 
   handlePress (e) {
+    if (this.props.done) return
     const { pageX, pageY } = e.pointers[0]
     this.setState({
       uiState: LONG_PRESS_REORDER,
