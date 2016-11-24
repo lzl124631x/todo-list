@@ -72,20 +72,26 @@ class TodoList extends React.Component {
     this.setState({
         delta: [deltaX, deltaY]
     })
-    if (this.state.uiState === DEFAULT && Math.abs(deltaY) > Math.abs(deltaX)) {
-      this.setState({
-        uiState: PULL_DOWN_LIST
-      })
+    switch (this.state.uiState) {
+      case DEFAULT:
+      case CANCEL_ADD: {
+        if (Math.abs(deltaY) > Math.abs(deltaX)) {
+          this.setState({
+            uiState: PULL_DOWN_LIST
+          })
+        }
+        break
+      }
     }
   }
   
   handlePanEnd () {
     const { uiState, delta } = this.state
-    this.setState({ delta: [0, 0] })
     switch (uiState) {
       case PULL_DOWN_LIST: {
         this.setState({
-          uiState: delta[1] > ITEM_HEIGHT ? RELEASED_TO_ADD : RELEASED_TO_DEFAULT
+          uiState: delta[1] > ITEM_HEIGHT ? RELEASED_TO_ADD : RELEASED_TO_DEFAULT,
+          delta: [0, 0]
         })
         break
       }
