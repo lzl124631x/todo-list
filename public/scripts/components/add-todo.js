@@ -2,12 +2,14 @@ import React from 'react'
 import { Motion, spring } from 'react-motion'
 import { clamp, ITEM_HEIGHT } from '../containers/util'
 
-let AddTodo = ({ onAdd, y, releaseAndAdd, cancelAdd, afterAdded }) => {
+const RELEASED_TO_ADD = 'RELEASED_TO_ADD'
+const CANCEL_ADD = 'CANCEL_ADD'
+let AddTodo = ({ onAdd, y, uiState, afterAdded }) => {
   let input
   let style = {}
   style.pullOpacity = spring(y < ITEM_HEIGHT ? 1 : 0)
   style.releaseOpacity = spring(y < ITEM_HEIGHT ? 0 : 1)
-  if (releaseAndAdd) {
+  if (uiState === RELEASED_TO_ADD) {
     style.textOpacity = spring(0)
   } else {
     style.textOpacity = spring(1)
@@ -23,8 +25,8 @@ let AddTodo = ({ onAdd, y, releaseAndAdd, cancelAdd, afterAdded }) => {
         ref={ node => {
           if (node != null) {
             input = node
-            if (releaseAndAdd) node.focus()
-            if (cancelAdd) {
+            if (uiState === RELEASED_TO_ADD) node.focus()
+            if (uiState === CANCEL_ADD) {
               node.blur()
               node.value = ''
             }
