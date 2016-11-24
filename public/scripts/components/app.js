@@ -124,10 +124,7 @@ import AddTodo from '../containers/add-todo'
 // });
 
 const App = () => (
-  <div style={{height: '100%'}}>
-    <TodoList />
-    <AddTodo />
-  </div>
+  <TodoList />
 )
 
 export default App
