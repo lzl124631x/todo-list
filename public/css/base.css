@@ -55,6 +55,7 @@ body {
   outline: none;
   font-family: inherit;
   font-size: inherit;
+  border-radius: 0;
 }
 
 .new-item-row-hint-text {
