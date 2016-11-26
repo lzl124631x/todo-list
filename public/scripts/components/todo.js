@@ -55,6 +55,54 @@ class Todo extends React.Component {
     }
   }
 
+  getY () {
+    const { uiState, delta } = this.state
+    const y = this.props.order * ITEM_HEIGHT
+    switch (uiState) {
+      case EDITING_LIST: {
+        return y
+      }
+      case LONG_PRESS_REORDER: {
+        return this.state.pressOrder * ITEM_HEIGHT + delta[1]
+      }
+      default: {
+        return spring(y)
+      }
+    }
+  }
+
+  getZ () {
+    switch (this.state.uiState) {
+      case LONG_PRESS_REORDER: return spring(1)
+      default: return spring(0);
+    }
+  }
+
+  getWrapperMotionStyle () {
+    return {
+      y: this.getY(),
+      z: this.getZ()
+    }
+  }
+
+  getBoxShadow (z) {
+    let shadowY = .2 * z
+    let shadowBlur = .3 * z
+    let shadowSpread = .2 * z
+    return `0 ${shadowY}em ${shadowBlur}em ${shadowSpread}em rgba(0,0,0,0.2)`
+  }
+
+  getWrapperStyle (y, z) {
+    console.log(y, z)
+    let scale = 1 + z * .05
+    return {
+      zIndex: this.getZIndex(),
+      boxShadow: this.getBoxShadow(z),
+      transform: `translateY(${y}px) scale(${scale})`,
+      WebkitTransform: `translateY(${y}px) scale(${scale})`
+    }
+  }
+
   getMotionStyle () {
     const xConfig = { stiffness: 1000, damping: 40 }
     // slow motion, for debug , { stiffness: 20, damping: 30}
@@ -64,68 +112,51 @@ class Todo extends React.Component {
     switch (uiState) {
       case DEFAULT: {
         return {
-          x: 0,
-          y: spring(y),
-          z: spring(0)
+          x: 0
         }
       }
       case PULL_RIGHT_ITEM: {
         return {
           x: this.slowDownX(Math.max(delta[0], 0)),
-          y: spring(y),
-          z: 0,
           percent: 0
         }
       }
       case RELEASED_TO_DEFAULT: {
         return {
-          x: spring(0, xConfig),
-          y: spring(y),
-          z: spring(0)
+          x: spring(0, xConfig)
         }
       }
       case RELEASED_TO_TOGGLE: {
         return {
           x: spring(0, xConfig),
-          y,
-          z: 0,
           percent: spring(1, xConfig)
         }
       }
       case TOGGLING_VERTICAL_MOVE: {
         return {
           x: 0,
-          y: spring(y),
-          z: 0,
           percent: spring(2)
         }
       }
       case PULL_LEFT_ITEM: {
         return {
           x: this.slowDownX(Math.min(delta[0], 0)),
-          y: spring(y),
           z: 0
         }
       }
       case RELEASED_TO_DELETE: {
         return {
-          x: spring(-pageWidth, xConfig),
-          y,
-          z: 0
+          x: spring(-pageWidth, xConfig)
         }
       }
       case LONG_PRESS_REORDER: {
         return {
-          x: 0,
-          y: this.state.pressOrder * ITEM_HEIGHT + delta[1],
-          z: spring(1)
+          x: 0
         }
       }
       case EDITING_LIST: {
         return {
-          x: 0,
-          y,
-          z: 0
+          x: 0
         }
       }
     }
@@ -183,7 +214,19 @@ class Todo extends React.Component {
     return `rgb(${Math.floor(RGB[0])},${Math.floor(RGB[1])},${Math.floor(RGB[2])})`
   }
 
-  getStyle (x, y, z, percent) {
+  getZIndex () {
+    const { uiState, order } = this.props
+    let zIndex = 0
+    if ((uiState === ITEM_JUST_ADDED && order === 0)
+      || uiState === TOGGLING_VERTICAL_MOVE
+      || uiState === LONG_PRESS_REORDER
+      || uiState === RELEASED_TO_DEFAULT) {
+      zIndex = 10000
+    }
+    return zIndex
+  }
+
+  getStyle (x, percent) {
     const { uiState, todoId, id, order } = this.props
     const isTarget = (todoId === id)
     const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
@@ -191,23 +234,8 @@ class Todo extends React.Component {
     // backgroundColor
     style.backgroundColor = this.getBackgroundColor(percent)
     // transform
-    let scale = 1 + z * .05
-    style.WebkitTransform = `translate(${x}px,${y}px) scale(${scale})`
-    style.transform = `translate(${x}px,${y}px) scale(${scale})`
-    // boxShadow
-    let shadowY = .2 * z
-    let shadowBlur = .3 * z
-    let shadowSpread = .2 * z
-    style.boxShadow = `0 ${shadowY}em ${shadowBlur}em ${shadowSpread}em rgba(0,0,0,0.2)`
-    // zIndex
-    style.zIndex = 0
-    if (isTarget
-      || (uiState === ITEM_JUST_ADDED && order === 0)
-      || this.state.uiState === TOGGLING_VERTICAL_MOVE
-      || this.state.uiState === LONG_PRESS_REORDER
-      || this.state.uiState === RELEASED_TO_DEFAULT) {
-      style.zIndex = 10000
-    }
+    style.WebkitTransform = `translate(${x}px)`
+    style.transform = `translate(${x}px)`
     return style
   }
 
@@ -334,6 +362,7 @@ class Todo extends React.Component {
 
   render() {
     let classes = classNames('todo', { 'done': this.props.done })
+    const wrapperMotionStyle = this.getWrapperMotionStyle()
     const motionStyle = this.getMotionStyle()
     const motionOnRest = this.getMotionOnRest()
     return (
@@ -350,20 +379,32 @@ class Todo extends React.Component {
           }
         }}>
         <Motion
-          defaultStyle={{ x: 0, y: 0, z: 0 }}
-          style={ motionStyle }
-          onRest={ motionOnRest }
-          fakeKey={this.props.id}>
-          {({ x, y, z, percent }) => {
-            const style = this.getStyle(x, y, z, percent)
-            return <div
-              className={classes}
-              style={style}
-            >
-              {this.props.text + '-' + this.props.order}
-            </div>
-            }
+        defaultStyle={{ y: 0 }}
+        style={ wrapperMotionStyle }>
+        {({ y, z }) => {
+          return <div className="todo-wrapper"
+          style={this.getWrapperStyle(y, z)}>
+            <span className="icon icon-check"></span>
+            <span className="icon icon-cross"></span>
+            <Motion
+              defaultStyle={{ x: 0, z: 0 }}
+              style={ motionStyle }
+              onRest={ motionOnRest }
+              fakeKey={this.props.id}>
+              {({ x, percent }) => {
+                const style = this.getStyle(x, percent)
+                return <div
+                  className={classes}
+                  style={style}
+                >
+                  {this.props.text + '-' + this.props.order}
+                </div>
+                }
+              }
+            </Motion>
+          </div>
           }
+        }
         </Motion>
       </Hammer>
     )
