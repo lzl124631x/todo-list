@@ -101,8 +101,16 @@ class TodoList extends React.Component {
     const { uiState, delta } = this.state
     switch (uiState) {
       case PULL_DOWN_LIST: {
+        let nextUiState
+        if (delta[1] > ITEM_HEIGHT) {
+          nextUiState = RELEASED_TO_ADD
+        } else if (delta[1] > 0) {
+          nextUiState = RELEASED_TO_DEFAULT
+        } else {
+          nextUiState = DEFAULT
+        }
         this.setState({
-          uiState: delta[1] > ITEM_HEIGHT ? RELEASED_TO_ADD : RELEASED_TO_DEFAULT,
+          uiState: nextUiState,
           delta: [0, 0]
         })
         break
