@@ -94,18 +94,79 @@ body {
   transition: opacity .2s;
 }
 
-/*.new-item-text span:nth-child(2) {
+.backdrop {
   position: absolute;
-  left: 0;
   top: 0;
-  }*/
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color rgba(0,0,0,.8);
+  z-index: 1;
+}
 
-  .backdrop {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background-color rgba(0,0,0,.8);
-    z-index: 1;
-  }
+.icon {
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+}
+
+.icon:before,
+.icon:after {
+  content: '';
+  background-color: #fff;
+  display: block;
+}
+
+.icon-check:before,
+.icon-check:after {
+  height: .2em;
+}
+.icon-check:before {
+  width: .3em;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  transform:
+  translate(.27em, .7em) rotate(-45deg) rotate(-90deg);
+}
+
+.icon-check:after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: .8em;
+  transform-origin: top left;
+  transform:  translate(.27em, .7em) rotate(-45deg);
+}
+
+.icon-cross:before,
+.icon-cross:after {
+  height: .2em;
+}
+
+.icon-cross:before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: .8em;
+  transform: translate(.1em, .4em) rotate(45deg);
+}
+
+.icon-cross:after {
+  postion: absolute;
+  top: 0;
+  left: 0;
+  width: .8em;
+  transform: translate(.1em, .4em) rotate(45deg)
+  rotate(90deg);
+}
+
+.todo-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1em;
+}
