@@ -28,10 +28,6 @@ const EDITING_LIST = 'EDITING_LIST'
 
 const H_PAN_THRESHOLD = 50
 
-function log(e) {
-  console.log(e.type, e)
-}
-
 const INITIAL_STATE = {
   // The mouse move delta
   delta: [0, 0],
@@ -193,9 +189,11 @@ class TodoList extends React.Component {
         { ({ y, backdropOpacity }) =>
           <div style={{
             height: '100%',
-            transform: `translateY(${y}px)`
+            transform: `translateY(${y}px)`,
+            WebkitTransform: `translateY(${y}px)`
           }}>
-            { uiState === RELEASED_TO_ADD || uiState === PULL_DOWN_LIST || uiState === CANCEL_ADD || uiState === RELEASED_TO_DEFAULT ? <AddTodo y={y}
+            { uiState === RELEASED_TO_ADD || uiState === PULL_DOWN_LIST || uiState === CANCEL_ADD || uiState === RELEASED_TO_DEFAULT ? 
+              <AddTodo y={y}
             uiState={uiState}
             afterAdded={this.handleAdd} /> : undefined }
               <Hammer
@@ -214,9 +212,7 @@ class TodoList extends React.Component {
                       return <Todo
                         key={ todo.id }
                         {...todo}
-                        y={ y }
                         uiState={ uiState }
-                        todoId={ todoId }
                         onToggle={ this.props.onToggle }
                         onDelete={ this.props.onDelete }
                         onReorder={ this.props.onReorder }
