@@ -37,6 +37,10 @@ $(() => {
   pageWidth = $('body').width()
 })
 
+const xConfig = { stiffness: 600, damping: 40 }
+// for debug
+const slowMotionConfig = { stiffness: 20, damping: 30 }
+
 class Todo extends React.Component {
   constructor(props) {
     super(props)
@@ -51,7 +55,8 @@ class Todo extends React.Component {
       uiState: DEFAULT,
       delta: [0, 0],
       press: [0, 0],
-      pressOrder: -1
+      pressOrder: -1,
+      releasedAtX: 0
     }
   }
 
@@ -78,13 +83,6 @@ class Todo extends React.Component {
     }
   }
 
-  getWrapperMotionStyle () {
-    return {
-      y: this.getY(),
-      z: this.getZ()
-    }
-  }
-
   getBoxShadow (z) {
     let shadowY = .2 * z
     let shadowBlur = .3 * z
@@ -93,7 +91,6 @@ class Todo extends React.Component {
   }
 
   getWrapperStyle (y, z) {
-    console.log(y, z)
     let scale = 1 + z * .05
     return {
       zIndex: this.getZIndex(),
@@ -104,69 +101,58 @@ class Todo extends React.Component {
   }
 
   getMotionStyle () {
-    const xConfig = { stiffness: 1000, damping: 40 }
-    // slow motion, for debug , { stiffness: 20, damping: 30}
-    const { uiState, delta } = this.state
-    const { uiState: ListUiState } = this.props
-    const y = this.props.order * ITEM_HEIGHT
-    switch (uiState) {
-      case DEFAULT: {
-        return {
-          x: 0
-        }
-      }
-      case PULL_RIGHT_ITEM: {
-        return {
-          x: this.slowDownX(Math.max(delta[0], 0)),
-          percent: 0
-        }
-      }
-      case RELEASED_TO_DEFAULT: {
-        return {
-          x: spring(0, xConfig)
-        }
-      }
-      case RELEASED_TO_TOGGLE: {
-        return {
-          x: spring(0, xConfig),
-          percent: spring(1, xConfig)
-        }
-      }
-      case TOGGLING_VERTICAL_MOVE: {
-        return {
-          x: 0,
-          percent: spring(2)
-        }
-      }
-      case PULL_LEFT_ITEM: {
-        return {
-          x: this.slowDownX(Math.min(delta[0], 0)),
-          z: 0
-        }
-      }
-      case RELEASED_TO_DELETE: {
-        return {
-          x: spring(-pageWidth, xConfig)
-        }
-      }
-      case LONG_PRESS_REORDER: {
-        return {
-          x: 0
-        }
-      }
-      case EDITING_LIST: {
-        return {
-          x: 0
-        }
-      }
+    return {
+      x: this.getX(),
+      y: this.getY(),
+      z: this.getZ(),
+      percent: this.getPercent()
     }
   }
 
-  slowDownX (x) {
+  getX () {
+    switch (this.state.uiState) {
+      case PULL_RIGHT_ITEM:
+      case PULL_LEFT_ITEM: {
+        return this.getOffsetX()
+      }
+      case RELEASED_TO_DEFAULT:
+      case RELEASED_TO_TOGGLE: {
+        return spring(0, xConfig)
+      }
+      case RELEASED_TO_DELETE: {
+        return spring(-pageWidth - H_PAN_THRESHOLD, xConfig)
+      }
+      default: return 0
+    }
+  }
+
+  getOffsetX () {
+    const { uiState } = this.state
+    let x = this.state.delta[0]
+    if (uiState === PULL_RIGHT_ITEM) {
+      x = Math.max(x, 0)
+    } else if (uiState === PULL_LEFT_ITEM) {
+      x = Math.min(x, 0)
+    } else return 0
     if (Math.abs(x) > H_PAN_THRESHOLD) {
       x = (x > 0 ? 1 : -1) * ((Math.abs(x) - H_PAN_THRESHOLD) / 5 + H_PAN_THRESHOLD)
     }
     return x
+  }
+
+  getPercent () {
+    switch (this.state.uiState) {
+      case PULL_RIGHT_ITEM: {
+        return 0
+      }
+      case RELEASED_TO_TOGGLE: {
+        return spring(1, xConfig)
+      }
+      case TOGGLING_VERTICAL_MOVE: {
+        return spring(2)
+      }
+      default: return 0
+    }
   }
 
   getMotionOnRest () {
@@ -215,21 +201,18 @@ class Todo extends React.Component {
   }
 
   getZIndex () {
-    const { uiState, order } = this.props
+    const { uiState: listUiState, order } = this.props
     let zIndex = 0
-    if ((uiState === ITEM_JUST_ADDED && order === 0)
-      || uiState === TOGGLING_VERTICAL_MOVE
-      || uiState === LONG_PRESS_REORDER
-      || uiState === RELEASED_TO_DEFAULT) {
+    if ((listUiState === ITEM_JUST_ADDED && order === 0)
+      || this.state.uiState === TOGGLING_VERTICAL_MOVE
+      || this.state.uiState === LONG_PRESS_REORDER
+      || this.state.uiState === RELEASED_TO_DEFAULT) {
       zIndex = 10000
     }
     return zIndex
   }
 
-  getStyle (x, percent) {
-    const { uiState, todoId, id, order } = this.props
-    const isTarget = (todoId === id)
-    const isToggled = (isTarget && uiState === RELEASED_TOGGLE_ITEM)
+  getItemStyle (x, percent) {
     let style = {}
     // backgroundColor
     style.backgroundColor = this.getBackgroundColor(percent)
@@ -237,6 +220,55 @@ class Todo extends React.Component {
     style.WebkitTransform = `translate(${x}px)`
     style.transform = `translate(${x}px)`
     return style
+  }
+
+  getCheckIconStyle (x) {
+    if (this.state.uiState === PULL_RIGHT_ITEM) {
+      let opacity = 1
+      if (x > H_PAN_THRESHOLD) {
+        x = x - H_PAN_THRESHOLD
+      } else {
+        opacity = x / H_PAN_THRESHOLD
+        x = 0
+      }
+      return {
+        opacity: opacity,
+        transform: `translateX(${x}px)`,
+        WebkitTransform: `translateX(${x}px)`
+      }
+    } else if (this.state.uiState === RELEASED_TO_TOGGLE) {
+      return {
+        opacity: 1,
+        transform: `transform(${this.state.releasedAtX}px)`,
+        WebkitTransform: `transform(${this.state.releasedAtX}px)`,
+      }
+    } else {
+      return {
+        opacity: 0
+      }
+    }
+  }
+
+  getCrossIconStyle (x) {
+    if (this.state.uiState === PULL_LEFT_ITEM
+      || this.state.uiState === RELEASED_TO_DELETE) {
+      let opacity
+      if (x < -H_PAN_THRESHOLD) {
+        x = x + H_PAN_THRESHOLD
+      } else {
+        opacity = -x / H_PAN_THRESHOLD
+        x = 0
+      }
+      return {
+        opacity: opacity,
+        transform: `translateX(${x}px)`,
+        WebkitTransform: `translateX(${x}px)`
+      }
+    } else {
+      return {
+        opacity: 0
+      }
+    }
   }
 
   componentWillUpdate(nextProps, nextState) {
@@ -300,8 +332,10 @@ class Todo extends React.Component {
     switch (uiState) {
       case PULL_RIGHT_ITEM: {
         let nextUiState
+        let releasedAtX = 0
         if (delta[0] > H_PAN_THRESHOLD) {
           nextUiState = RELEASED_TO_TOGGLE
+          releasedAtX = delta[0]
         } else if (delta[0] > 0) {
           nextUiState = RELEASED_TO_DEFAULT
         } else {
@@ -309,14 +343,17 @@ class Todo extends React.Component {
         }
         this.setState({
           uiState: nextUiState,
-          delta: [0, 0]
+          delta: [0, 0],
+          releasedAtX
         })
         break
       }
       case PULL_LEFT_ITEM: {
         let nextUiState
+        let releasedAtX = 0
         if (delta[0] < -H_PAN_THRESHOLD) {
           nextUiState = RELEASED_TO_DELETE
+          releasedAtX = delta[0]
         } else if (delta[0] < 0) {
           nextUiState = RELEASED_TO_DEFAULT
         } else {
@@ -324,7 +361,8 @@ class Todo extends React.Component {
         }
         this.setState({
           uiState: nextUiState,
-          delta: [0, 0]
+          delta: [0, 0],
+          releasedAtX
         })
         break
       }
@@ -362,7 +400,6 @@ class Todo extends React.Component {
 
   render() {
     let classes = classNames('todo', { 'done': this.props.done })
-    const wrapperMotionStyle = this.getWrapperMotionStyle()
     const motionStyle = this.getMotionStyle()
     const motionOnRest = this.getMotionOnRest()
     return (
@@ -379,29 +416,21 @@ class Todo extends React.Component {
           }
         }}>
         <Motion
-        defaultStyle={{ y: 0 }}
-        style={ wrapperMotionStyle }>
-        {({ y, z }) => {
+        defaultStyle={{ x: 0, y: 0, z: 0 }}
+        style={ motionStyle }
+        onRest={ motionOnRest }>
+        {({ x, y, z, percent }) => {
           return <div className="todo-wrapper"
-          style={this.getWrapperStyle(y, z)}>
-            <span className="icon icon-check"></span>
-            <span className="icon icon-cross"></span>
-            <Motion
-              defaultStyle={{ x: 0, z: 0 }}
-              style={ motionStyle }
-              onRest={ motionOnRest }
-              fakeKey={this.props.id}>
-              {({ x, percent }) => {
-                const style = this.getStyle(x, percent)
-                return <div
-                  className={classes}
-                  style={style}
-                >
-                  {this.props.text + '-' + this.props.order}
-                </div>
-                }
-              }
-            </Motion>
+          style={ this.getWrapperStyle(y, z) }>
+            <span className="icon icon-check"
+            style={ this.getCheckIconStyle(x) }></span>
+            <span className="icon icon-cross"
+            style={ this.getCrossIconStyle(x) }></span>
+            <div
+              className={classes}
+              style={ this.getItemStyle(x, percent) }>
+              {this.props.text + '-' + this.props.order}
+            </div>
           </div>
           }
         }

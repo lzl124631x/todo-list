@@ -25,6 +25,7 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  /*opacity: .3;*/
 }
 
 .todo,
@@ -114,14 +115,15 @@ body {
 .icon:before,
 .icon:after {
   content: '';
-  background-color: #fff;
   display: block;
 }
 
 .icon-check:before,
 .icon-check:after {
   height: .2em;
+  background-color: #fff;
 }
+
 .icon-check:before {
   width: .3em;
   position: absolute;
@@ -139,6 +141,11 @@ body {
   width: .8em;
   transform-origin: top left;
   transform:  translate(.27em, .7em) rotate(-45deg);
+}
+
+.icon-cross:before,
+.icon-cross:after {
+  background-color: #FF4136;
 }
 
 .icon-cross:before,
@@ -163,10 +170,15 @@ body {
   rotate(90deg);
 }
 
+.icon.icon-cross {
+  float: right;
+}
+
 .todo-wrapper {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
+  box-sizing: border-box;
   padding: 1em;
 }
