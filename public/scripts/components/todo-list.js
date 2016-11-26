@@ -121,6 +121,7 @@ class TodoList extends React.Component {
   getListY() {
     switch (this.state.uiState) {
       case RELEASED_TO_ADD: return spring(ITEM_HEIGHT)
+      case RELEASED_TO_DEFAULT:
       case CANCEL_ADD: return spring(0)
       case PULL_DOWN_LIST: {
         // Can only pull down, cannot pull up
@@ -145,7 +146,8 @@ class TodoList extends React.Component {
   getMotionOnRest () {
     switch (this.state.uiState) {
       case CANCEL_ADD: 
-      case ITEM_JUST_ADDED: {
+      case ITEM_JUST_ADDED:
+      case RELEASED_TO_DEFAULT: {
         return () => {
           this.setState({
             uiState: DEFAULT
@@ -193,7 +195,7 @@ class TodoList extends React.Component {
             height: '100%',
             transform: `translateY(${y}px)`
           }}>
-            { uiState === RELEASED_TO_ADD || uiState === PULL_DOWN_LIST || uiState === CANCEL_ADD ? <AddTodo y={y}
+            { uiState === RELEASED_TO_ADD || uiState === PULL_DOWN_LIST || uiState === CANCEL_ADD || uiState === RELEASED_TO_DEFAULT ? <AddTodo y={y}
             uiState={uiState}
             afterAdded={this.handleAdd} /> : undefined }
               <Hammer
